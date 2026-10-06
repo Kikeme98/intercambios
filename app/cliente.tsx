@@ -187,6 +187,7 @@ export function Revelar({ nombre }: { nombre: string }) {
     for (let k = 0; k < 26; k++) {
       const c = document.createElement("span");
       c.className = "chispa";
+      c.style.background = ["var(--accent)", "#f4c26b", "#fff1d6"][k % 3];
       raiz.current!.appendChild(c);
       gsap.set(c, { left: r.left - caja.left + gsap.utils.random(0, r.width), top: r.top - caja.top + r.height * gsap.utils.random(0.3, 0.8) });
       gsap.fromTo(

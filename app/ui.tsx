@@ -11,6 +11,7 @@ import {
   Link as LinkIcon,
   PaperPlaneRight,
   Plus,
+  TreeEvergreen,
   X,
 } from "@phosphor-icons/react/ssr";
 
@@ -27,6 +28,7 @@ const iconos = {
   google: GoogleLogo,
   copiar: Copy,
   check: Check,
+  arbol: TreeEvergreen,
 };
 
 export function Icono({ n, className = "size-5" }: { n: keyof typeof iconos; className?: string }) {
@@ -42,10 +44,30 @@ export function Barra({ atras, children }: { atras?: string; children?: React.Re
           <Icono n="atras" className="size-[18px]" />
         </Link>
       ) : (
-        <span className="text-[15px] font-semibold tracking-tight">GS</span>
+        <span className="flex items-center gap-1.5 pl-1 text-[15px] font-semibold tracking-tight">
+          <Icono n="arbol" className="size-[18px] text-[#3fb37f]" /> GS
+        </span>
       )}
       {children}
     </header>
+  );
+}
+
+const COLORES_FOCO = ["#ff4530", "#f4c26b", "#3fb37f", "#fff1d6"];
+
+/** Serie de luces navideñas colgando de lado a lado (decorativa). */
+export function Serie() {
+  return (
+    <div className="serie" aria-hidden>
+      {Array.from({ length: 12 }, (_, i) => (
+        <span key={i}>
+          <svg viewBox="0 0 100 34" preserveAspectRatio="none">
+            <path d="M0 4 Q50 44 100 4" fill="none" stroke="#4a4b50" strokeWidth="1.8" vectorEffect="non-scaling-stroke" />
+          </svg>
+          <i className="foco" style={{ "--c": COLORES_FOCO[i % 4], "--i": i } as React.CSSProperties} />
+        </span>
+      ))}
+    </div>
   );
 }
 

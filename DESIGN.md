@@ -17,7 +17,12 @@ Una app nocturna y privada, como abrir un regalo en un cuarto oscuro. Fondo casi
 - **Humo** (#9A9BA1): texto secundario, metadatos y placeholders (7:1 sobre Noche).
 - **Brasa** (#FF4530): único acento. Círculo del CTA, brillo de fondo, indicadores de "nuevo". Como texto se usa **Brasa clara** (#FF6B5E) para pasar contraste AA.
 
-Nada de morado, neón ni negro puro. El error también usa Brasa: un solo acento.
+Nada de morado, neón ni negro puro. El error también usa Brasa: un solo acento para todo lo que se toca.
+
+**Decoración navideña** (nunca en botones, textos ni estados; solo ambiente):
+- **Pino** (#3FB37F): arbolito de la marca y el brillo de abajo a la izquierda (rgba(46,160,103,0.16)).
+- **Focos** de la serie de luces: Brasa (#FF4530), Dorado (#F4C26B), Pino (#3FB37F) y Cálido (#FFF1D6).
+- **Nieve**: blanco con opacidad de 0.3 a 0.85.
 
 ## 3. Typography Rules
 - **Display y cuerpo:** Geist. Títulos en peso 600 con tracking cerrado (-0.045em) y altura de línea 1.02. La jerarquía la dan el peso y el color (Tiza contra Humo), no solo el tamaño.
@@ -49,6 +54,7 @@ Motor: GSAP 3 (SplitText, ScrambleText y Flip) con `@gsap/react`. La capa global
 - Sortear: las fichas de participantes se barajan con Flip seis veces y regresan a su orden antes de enviar.
 - Cursor (solo pointer fino): el círculo del ícono del CTA se mueve hacia el cursor, pero el botón no se mueve para no romper su grupo. Las tarjetas se inclinan hasta 4° con una luz que sigue al cursor, y el brillo de fondo sigue al cursor con 3 s de inercia.
 - Navegación: el nombre del intercambio se transforma de la lista al detalle con `<ViewTransition>`.
+- Navidad (CSS, capas fijas y solo `transform` u `opacity`): serie de 12 focos colgando arriba que parpadean a destiempo (2.6 s, escalonados); nieve en dos capas con profundidad (45 s y 28 s); el brillo pino deriva al revés que el rojo. La barra de vidrio refracta los focos.
 - Todo se apaga con `prefers-reduced-motion`. Solo se animan `transform`, `opacity` y `filter`.
 
 ## 7. Anti-Patterns (Banned)

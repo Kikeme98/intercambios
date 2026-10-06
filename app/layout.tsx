@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Efectos } from "./motion";
+import { Serie } from "./ui";
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -28,7 +29,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         </svg>
         <div className="brillo-sigue" aria-hidden>
           <div className="brillo" />
+          <div className="brillo-pino" />
         </div>
+        <div className="nieve" aria-hidden />
+        <Serie />
         <Efectos />
         <div className="relative mx-auto w-full max-w-md px-5 pb-16">{children}</div>
       </body>

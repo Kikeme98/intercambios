@@ -8,7 +8,9 @@ export default async function Entrar({ searchParams }: PageProps<"/entrar">) {
   return (
     <main className="flex min-h-dvh flex-col justify-end gap-10 py-12">
       <div>
-        <p className="text-[15px] font-semibold tracking-tight">Intercambio GS</p>
+        <p className="flex items-center gap-1.5 text-[15px] font-semibold tracking-tight">
+          <Icono n="arbol" className="size-[18px] text-[#3fb37f]" /> Intercambio GS
+        </p>
         <TituloLetras className="titulo mt-6 pb-1 text-[56px]">Saca tu papelito.</TituloLetras>
         <p className="mt-4 max-w-[30ch] text-muted">
           Ve a quién te tocó, qué quiere y escríbele sin que sepa que eres tú.
