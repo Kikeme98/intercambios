@@ -4,8 +4,8 @@ import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { sesion } from "@/lib/supabase";
 import { diasPara, fecha, formatoDireccion, pesos, type Direccion } from "@/lib/util";
-import { agregarDeseo, agregarExclusion, borrarDeseo, borrarExclusion, guardarDireccion, quitarParticipante, sortear } from "../../actions";
-import { CamposCP, Copiar, CopiarTexto, Revelar } from "../../cliente";
+import { agregarDeseo, agregarExclusion, borrarDeseo, borrarExclusion, borrarIntercambio, deshacerSorteo, editarIntercambio, guardarDireccion, quitarParticipante, sortear } from "../../actions";
+import { CamposDireccion, Copiar, CopiarTexto, Revelar } from "../../cliente";
 import { BotonSortear } from "../../motion";
 import { Barra, Bezel, ErrorMsg, Icono } from "../../ui";
 
@@ -54,6 +54,36 @@ export default async function Intercambio({ params, searchParams }: PageProps<"/
         <p className="dato mt-3">
           {[i.fecha && fecha(i.fecha), i.presupuesto && `tope ${pesos(i.presupuesto)}`, `${gente!.length} personas`].filter(Boolean).join(" / ")}
         </p>
+        {soyOrg && (
+          <details className="group mt-4 [&_summary::-webkit-details-marker]:hidden">
+            <summary className="btn-ghost h-10 w-fit cursor-pointer list-none px-4 text-sm group-open:hidden">Editar intercambio</summary>
+            <Bezel>
+              <form action={editarIntercambio} className="space-y-4">
+                <input type="hidden" name="id" value={id} />
+                <label className="block space-y-2">
+                  <span className="etiqueta">Nombre</span>
+                  <input name="nombre" required maxLength={80} defaultValue={i.nombre} className="input" />
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="block space-y-2">
+                    <span className="etiqueta">Fecha</span>
+                    <input name="fecha" type="date" defaultValue={i.fecha ?? ""} className="input" />
+                  </label>
+                  <label className="block space-y-2">
+                    <span className="etiqueta">Presupuesto</span>
+                    <input name="presupuesto" type="number" min={0} step={50} inputMode="numeric" defaultValue={i.presupuesto ?? ""} className="input" />
+                  </label>
+                </div>
+                <button className="btn w-full">
+                  Guardar cambios
+                  <span className="btn-icono">
+                    <Icono n="check" />
+                  </span>
+                </button>
+              </form>
+            </Bezel>
+          </details>
+        )}
       </header>
 
       <div className="mt-6">
@@ -235,8 +265,54 @@ export default async function Intercambio({ params, searchParams }: PageProps<"/
             </div>
           </Bezel>
         )}
+        {soyOrg && (
+          <section className="space-y-2 pt-4">
+            <h2 className="titulo mb-2 text-2xl">Zona de quien organiza</h2>
+            {!abierto && (
+              <Confirmar
+                accion={deshacerSorteo}
+                id={id}
+                boton="Deshacer sorteo"
+                aviso="El intercambio vuelve a estar abierto: puedes agregar o quitar gente, cambiar exclusiones y volver a sortear. Se borran las asignaciones y todos los chats, para que nadie lea mensajes que eran para otro santa."
+                confirmo="Sí, deshacer el sorteo y borrar los chats"
+              />
+            )}
+            <Confirmar
+              accion={borrarIntercambio}
+              id={id}
+              boton="Borrar intercambio"
+              aviso="Se borra todo: participantes, listas, direcciones, sorteo y chats. No se puede recuperar."
+              confirmo="Sí, borrar el intercambio completo"
+            />
+          </section>
+        )}
       </div>
     </main>
+  );
+}
+
+/** Acción destructiva: se despliega, explica qué pasa y exige marcar una casilla. */
+function Confirmar({ accion, id, boton, aviso, confirmo }: { accion: (f: FormData) => Promise<void>; id: string; boton: string; aviso: string; confirmo: string }) {
+  return (
+    <details className="group [&_summary::-webkit-details-marker]:hidden">
+      <summary className="btn-ghost w-full cursor-pointer list-none text-accent-text group-open:hidden">{boton}</summary>
+      <Bezel>
+        <form action={accion} className="space-y-4">
+          <input type="hidden" name="id" value={id} />
+          <p className="text-[15px]">{aviso}</p>
+          <label className="flex items-start gap-3 text-sm">
+            <input type="checkbox" name="confirmo" value="si" required className="mt-0.5 size-5 shrink-0 accent-[var(--accent)]" />
+            {confirmo}
+          </label>
+          <button className="btn w-full">
+            {boton}
+            <span className="btn-icono">
+              <Icono n="x" />
+            </span>
+          </button>
+        </form>
+      </Bezel>
+    </details>
   );
 }
 
@@ -282,9 +358,8 @@ function FormDireccion({ id, d }: { id: string; d?: Direccion }) {
   return (
     <form action={guardarDireccion} className="space-y-3">
       <input type="hidden" name="id" value={id} />
+      <CamposDireccion d={d} />
       <Campo nombre="recibe" etiqueta="Quién recibe" auto="name" valor={d?.recibe} />
-      <CamposCP d={d} />
-      <Campo nombre="calle" etiqueta="Calle, número e interior" auto="address-line1" valor={d?.calle} />
       <Campo nombre="telefono" etiqueta="Teléfono (10 dígitos)" auto="tel-national" valor={d?.telefono} tipo="tel" modo="tel" />
       <Campo nombre="referencias" etiqueta="Referencias (opcional)" valor={d?.referencias ?? undefined} requerido={false} max={200} ayuda="Entre calles, color de la casa..." />
       <button className="btn mt-2 w-full">

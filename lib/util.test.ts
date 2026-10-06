@@ -35,11 +35,14 @@ test("diasPara", () => {
 test("telefono10", () => {
   assert.equal(telefono10("81 1234-5678"), "8112345678");
   assert.equal(telefono10("+52 81 1234 5678"), "8112345678");
+  assert.equal(telefono10("+1 (512) 555-0123", "US"), "5125550123");
   assert.equal(telefono10("1234"), "1234");
 });
 
 test("formatoDireccion", () => {
-  const d = { recibe: "Pablo Garza", calle: "Av. Fundidora 501", colonia: "Obrera", cp: "64010", ciudad: "Monterrey", estado: "Nuevo León", telefono: "8112345678", referencias: null };
-  assert.equal(formatoDireccion(d), "Pablo Garza\nAv. Fundidora 501, Col. Obrera\nCP 64010, Monterrey, Nuevo León\nTel. 81 1234 5678");
+  const d = { pais: "MX" as const, recibe: "Pablo Garza", calle: "Av. Fundidora 501", colonia: "Obrera", cp: "64010", ciudad: "Monterrey", estado: "Nuevo León", telefono: "8112345678", referencias: null };
+  assert.equal(formatoDireccion(d), "Pablo Garza\nAv. Fundidora 501, Col. Obrera\nCP 64010, Monterrey, Nuevo León\nMéxico\nTel. +52 81 1234 5678");
   assert.match(formatoDireccion({ ...d, referencias: "Portón negro" }), /\nReferencias: Portón negro$/);
+  const us = { pais: "US" as const, recibe: "Mike Turner", calle: "1200 Main St, Apt 4B", colonia: null, cp: "78701", ciudad: "Austin", estado: "Texas", telefono: "5125550123", referencias: null };
+  assert.equal(formatoDireccion(us), "Mike Turner\n1200 Main St, Apt 4B\nAustin, Texas 78701\nEstados Unidos\nTel. +1 (512) 555-0123");
 });

@@ -3,7 +3,7 @@
 import { createBrowserClient } from "@supabase/ssr";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { useEffect, useRef, useState } from "react";
-import { ESTADOS } from "@/lib/util";
+import { PAISES, type Direccion, type Pais } from "@/lib/util";
 import { gsap, sinMovimiento, useGSAP } from "./motion";
 import { Icono } from "./ui";
 
@@ -12,18 +12,29 @@ let cliente: SupabaseClient | undefined;
 const sb = () => (cliente ??= createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!));
 
 /**
- * CP, colonia, municipio y estado. Al escribir un CP válido se consultan las colonias del catálogo
- * oficial (tabla codigo_postal) y se llenan municipio y estado. La colonia sugiere pero acepta texto libre.
+ * País, CP/ZIP, colonia, municipio/ciudad, estado y calle.
+ * México: al escribir un CP válido se consultan las colonias del catálogo oficial (tabla codigo_postal)
+ * y se llenan municipio y estado; la colonia sugiere pero acepta texto libre.
+ * Estados Unidos: sin colonia ni autollenado; ZIP de 5 dígitos (o ZIP+4).
  */
-export function CamposCP({ d }: { d?: { cp: string; colonia: string; ciudad: string; estado: string } }) {
+export function CamposDireccion({ d }: { d?: Direccion }) {
+  const [pais, setPais] = useState<Pais>(d?.pais ?? "MX");
   const [colonias, setColonias] = useState<string[]>([]);
   const [colonia, setColonia] = useState(d?.colonia ?? "");
   const [municipio, setMunicipio] = useState(d?.ciudad ?? "");
   const [estado, setEstado] = useState(d?.estado ?? "");
   const [aviso, setAviso] = useState("");
+  const us = pais === "US";
+
+  function cambiarPais(p: Pais) {
+    setPais(p);
+    setEstado("");
+    setColonias([]);
+    setAviso("");
+  }
 
   async function buscar(cp: string) {
-    if (!/^\d{5}$/.test(cp)) return setColonias([]);
+    if (us || !/^\d{5}$/.test(cp)) return setColonias([]);
     const { data } = await sb().from("codigo_postal").select("colonia, municipio, estado").eq("cp", cp).order("colonia");
     if (!data?.length) {
       setColonias([]);
@@ -38,56 +49,77 @@ export function CamposCP({ d }: { d?: { cp: string; colonia: string; ciudad: str
 
   return (
     <>
+      <fieldset className="space-y-2">
+        <legend className="etiqueta mb-2">País</legend>
+        <div className="vidrio grid grid-cols-2 gap-1 rounded-full p-1.5">
+          {(["MX", "US"] as const).map((p) => (
+            <label
+              key={p}
+              className="grid h-11 cursor-pointer place-items-center rounded-full text-[15px] text-muted transition-colors has-[:checked]:bg-ink has-[:checked]:text-bg has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-ink"
+            >
+              <input type="radio" name="pais" value={p} checked={pais === p} onChange={() => cambiarPais(p)} className="sr-only" />
+              {PAISES[p].nombre}
+            </label>
+          ))}
+        </div>
+      </fieldset>
       <label className="block space-y-2">
-        <span className="etiqueta">Código postal</span>
+        <span className="etiqueta">{us ? "ZIP code" : "Código postal"}</span>
         <input
+          key={pais}
           name="cp"
           required
           inputMode="numeric"
-          pattern="[0-9]{5}"
-          maxLength={5}
+          pattern={us ? "[0-9]{5}(-[0-9]{4})?" : "[0-9]{5}"}
+          maxLength={us ? 10 : 5}
           autoComplete="postal-code"
-          defaultValue={d?.cp}
+          defaultValue={pais === d?.pais ? d.cp : undefined}
           onChange={(e) => buscar(e.target.value.trim())}
-          placeholder="Con él llenamos colonia, municipio y estado"
+          placeholder={us ? "Ej. 78701" : "Con él llenamos colonia, municipio y estado"}
           className="input"
         />
         {aviso && <span className="block text-xs text-accent-text">{aviso}</span>}
       </label>
-      <label className="block space-y-2">
-        <span className="etiqueta">Colonia</span>
-        <input
-          name="colonia"
-          required
-          maxLength={80}
-          list="colonias-cp"
-          autoComplete="address-line2"
-          value={colonia}
-          onChange={(e) => setColonia(e.target.value)}
-          placeholder={colonias.length > 1 ? `Elige entre ${colonias.length} colonias` : undefined}
-          className="input"
-        />
-        <datalist id="colonias-cp">
-          {colonias.map((c) => (
-            <option key={c} value={c} />
-          ))}
-        </datalist>
-      </label>
+      {!us && (
+        <label className="block space-y-2">
+          <span className="etiqueta">Colonia</span>
+          <input
+            name="colonia"
+            required
+            maxLength={80}
+            list="colonias-cp"
+            autoComplete="address-line2"
+            value={colonia}
+            onChange={(e) => setColonia(e.target.value)}
+            placeholder={colonias.length > 1 ? `Elige entre ${colonias.length} colonias` : undefined}
+            className="input"
+          />
+          <datalist id="colonias-cp">
+            {colonias.map((c) => (
+              <option key={c} value={c} />
+            ))}
+          </datalist>
+        </label>
+      )}
       <div className="grid grid-cols-2 gap-3">
         <label className="block space-y-2">
-          <span className="etiqueta">Municipio o alcaldía</span>
+          <span className="etiqueta">{us ? "Ciudad" : "Municipio o alcaldía"}</span>
           <input name="ciudad" required maxLength={80} autoComplete="address-level2" value={municipio} onChange={(e) => setMunicipio(e.target.value)} className="input" />
         </label>
         <label className="block space-y-2">
           <span className="etiqueta">Estado</span>
           <select name="estado" required autoComplete="address-level1" value={estado} onChange={(e) => setEstado(e.target.value)} className="input">
             <option value="" disabled>Elige</option>
-            {ESTADOS.map((e) => (
+            {PAISES[pais].estados.map((e) => (
               <option key={e}>{e}</option>
             ))}
           </select>
         </label>
       </div>
+      <label className="block space-y-2">
+        <span className="etiqueta">{us ? "Street address (con Apt o Unit)" : "Calle, número e interior"}</span>
+        <input name="calle" required maxLength={120} autoComplete="address-line1" defaultValue={d?.calle} placeholder={us ? "Ej. 1200 Main St, Apt 4B" : undefined} className="input" />
+      </label>
     </>
   );
 }

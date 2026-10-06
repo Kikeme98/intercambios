@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { db, sesion } from "@/lib/supabase";
-import { ESTADOS, leerMeta, rutaSegura, telefono10, urlPublica } from "@/lib/util";
+import { leerMeta, PAISES, rutaSegura, telefono10, urlPublica, type Pais } from "@/lib/util";
 
 const txt = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
 const origen = async () => {
@@ -51,6 +51,42 @@ export async function crearIntercambio(f: FormData) {
     .single();
   if (error) fallar("/", "No se pudo crear el intercambio. Intenta otra vez.");
   redirect(`/i/${data!.id}`);
+}
+
+export async function editarIntercambio(f: FormData) {
+  const id = txt(f, "id");
+  const nombre = txt(f, "nombre").slice(0, 80);
+  if (!nombre) fallar(`/i/${id}`, "El intercambio necesita un nombre.");
+  const { supabase } = await sesion();
+  // RLS: solo quien organiza; y solo nombre, fecha y presupuesto (ver migración 003).
+  const { error } = await supabase
+    .from("intercambio")
+    .update({ nombre, fecha: txt(f, "fecha") || null, presupuesto: Number(txt(f, "presupuesto")) || null })
+    .eq("id", id);
+  if (error) fallar(`/i/${id}`, "No se pudo guardar el cambio. Intenta otra vez.");
+  revalidatePath(`/i/${id}`);
+  revalidatePath("/");
+}
+
+export async function deshacerSorteo(f: FormData) {
+  const id = txt(f, "id");
+  if (txt(f, "confirmo") !== "si") fallar(`/i/${id}`, "Marca la casilla para confirmar.");
+  const { supabase } = await sesion();
+  const { error } = await supabase.rpc("deshacer_sorteo", { i: id });
+  if (error) fallar(`/i/${id}`, error.message);
+  revalidatePath(`/i/${id}`);
+  revalidatePath("/");
+}
+
+export async function borrarIntercambio(f: FormData) {
+  const id = txt(f, "id");
+  if (txt(f, "confirmo") !== "si") fallar(`/i/${id}`, "Marca la casilla para confirmar.");
+  const { supabase } = await sesion();
+  // RLS: solo quien organiza. Participantes, listas, chats y direcciones se borran en cascada.
+  const { data } = await supabase.from("intercambio").delete().eq("id", id).select("id");
+  if (!data?.length) fallar(`/i/${id}`, "No se pudo borrar el intercambio.");
+  revalidatePath("/");
+  redirect("/");
 }
 
 export async function unirse(f: FormData) {
@@ -130,23 +166,27 @@ export async function borrarDeseo(f: FormData) {
 
 export async function guardarDireccion(f: FormData) {
   const id = txt(f, "id");
+  const pais: Pais = txt(f, "pais") === "US" ? "US" : "MX";
   const d = {
+    pais,
     recibe: txt(f, "recibe").slice(0, 80),
     calle: txt(f, "calle").slice(0, 120),
-    colonia: txt(f, "colonia").slice(0, 80),
+    colonia: pais === "MX" ? txt(f, "colonia").slice(0, 80) : null, // en USA no hay colonia
     cp: txt(f, "cp").replace(/\s/g, ""),
     ciudad: txt(f, "ciudad").slice(0, 80),
     estado: txt(f, "estado"),
-    telefono: telefono10(txt(f, "telefono")),
+    telefono: telefono10(txt(f, "telefono"), pais),
     referencias: txt(f, "referencias").slice(0, 200) || null,
   };
-  if (!d.recibe || !d.calle || !d.colonia || !d.ciudad) fallar(`/i/${id}`, "Te faltó algún dato de la dirección.");
-  if (!/^\d{5}$/.test(d.cp)) fallar(`/i/${id}`, "El código postal son 5 números.");
-  if (!ESTADOS.includes(d.estado)) fallar(`/i/${id}`, "Elige tu estado de la lista.");
-  if (!/^\d{10}$/.test(d.telefono)) fallar(`/i/${id}`, "El teléfono son 10 números, para que la paquetería te pueda llamar.");
+  const volver = `/i/${id}`;
+  if (!d.recibe || !d.calle || !d.ciudad || (pais === "MX" && !d.colonia)) fallar(volver, "Te faltó algún dato de la dirección.");
+  if (pais === "MX" && !/^\d{5}$/.test(d.cp)) fallar(volver, "El código postal son 5 números.");
+  if (pais === "US" && !/^\d{5}(-\d{4})?$/.test(d.cp)) fallar(volver, "El ZIP code son 5 números (o 5 y 4, como 78701-1234).");
+  if (!PAISES[pais].estados.includes(d.estado)) fallar(volver, "Elige tu estado de la lista.");
+  if (!/^\d{10}$/.test(d.telefono)) fallar(volver, "El teléfono son 10 números, para que la paquetería te pueda llamar.");
 
   const { supabase } = await sesion();
   const { error } = await supabase.from("direccion").upsert({ intercambio_id: id, ...d });
-  if (error) fallar(`/i/${id}`, "No se pudo guardar tu dirección. Intenta otra vez.");
-  revalidatePath(`/i/${id}`);
+  if (error) fallar(volver, "No se pudo guardar tu dirección. Intenta otra vez.");
+  revalidatePath(volver);
 }

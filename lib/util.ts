@@ -47,25 +47,44 @@ export const ESTADOS = [
   "Sonora", "Tabasco", "Tamaulipas", "Tlaxcala", "Veracruz", "Yucatán", "Zacatecas",
 ];
 
+export const ESTADOS_US = [
+  "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", "District of Columbia",
+  "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine",
+  "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada",
+  "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon",
+  "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia",
+  "Washington", "West Virginia", "Wisconsin", "Wyoming",
+];
+
+export type Pais = "MX" | "US";
+export const PAISES: Record<Pais, { nombre: string; lada: string; estados: string[] }> = {
+  MX: { nombre: "México", lada: "+52", estados: ESTADOS },
+  US: { nombre: "Estados Unidos", lada: "+1", estados: ESTADOS_US },
+};
+
 export type Direccion = {
-  recibe: string; calle: string; colonia: string; cp: string;
+  pais: Pais; recibe: string; calle: string; colonia: string | null; cp: string;
   ciudad: string; estado: string; telefono: string; referencias: string | null;
 };
 
-/** Deja solo los 10 dígitos de un teléfono mexicano (quita espacios, guiones y lada +52). */
-export function telefono10(raw: string) {
+/** Deja solo los 10 dígitos del teléfono (quita espacios, guiones y la lada +52 o +1). */
+export function telefono10(raw: string, pais: Pais = "MX") {
   const d = raw.replace(/\D/g, "");
-  return d.length === 12 && d.startsWith("52") ? d.slice(2) : d;
+  if (pais === "MX" && d.length === 12 && d.startsWith("52")) return d.slice(2);
+  if (pais === "US" && d.length === 11 && d.startsWith("1")) return d.slice(1);
+  return d;
 }
 
-/** Dirección como la pide una paquetería, lista para copiar. */
+/** Dirección como la pide una paquetería, lista para copiar. Con país y lada, por si el envío es internacional. */
 export function formatoDireccion(d: Direccion) {
-  const tel = d.telefono.replace(/(\d{2})(\d{4})(\d{4})/, "$1 $2 $3");
+  const p = PAISES[d.pais];
+  const tel = d.pais === "US" ? d.telefono.replace(/(\d{3})(\d{3})(\d{4})/, "($1) $2-$3") : d.telefono.replace(/(\d{2})(\d{4})(\d{4})/, "$1 $2 $3");
   return [
     d.recibe,
-    `${d.calle}, Col. ${d.colonia}`,
-    `CP ${d.cp}, ${d.ciudad}, ${d.estado}`,
-    `Tel. ${tel}`,
+    d.pais === "US" ? d.calle : `${d.calle}, Col. ${d.colonia}`,
+    d.pais === "US" ? `${d.ciudad}, ${d.estado} ${d.cp}` : `CP ${d.cp}, ${d.ciudad}, ${d.estado}`,
+    p.nombre,
+    `Tel. ${p.lada} ${tel}`,
     d.referencias && `Referencias: ${d.referencias}`,
   ].filter(Boolean).join("\n");
 }
