@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Intercambio GS: "el papelito". Un papel de sorteo doblado a la mitad, recién abierto, con el destello del secreto.
+       Paleta Noche (DESIGN.md). Fuente única: los PNG y el .ico se generan a partir de este archivo. -->
+  <defs>
+    <radialGradient id="brasa" cx="86%" cy="8%" r="72%">
+      <stop offset="0" stop-color="#FF4530" stop-opacity="0.5" />
+      <stop offset="1" stop-color="#FF4530" stop-opacity="0" />
+    </radialGradient>
+    <radialGradient id="pino" cx="6%" cy="98%" r="62%">
+      <stop offset="0" stop-color="#2EA067" stop-opacity="0.34" />
+      <stop offset="1" stop-color="#2EA067" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="izq" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#F4F4F6" />
+      <stop offset="1" stop-color="#FFFFFF" />
+    </linearGradient>
+    <linearGradient id="der" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#D6D7DC" />
+      <stop offset="1" stop-color="#ECECEF" />
+    </linearGradient>
+    <filter id="sombra" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="18" stdDeviation="20" flood-color="#000" flood-opacity="0.55" />
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="116" fill="#0B0C0E" />
+  <rect width="512" height="512" rx="116" fill="url(#brasa)" />
+  <rect width="512" height="512" rx="116" fill="url(#pino)" />
+  <rect x="1.5" y="1.5" width="509" height="509" rx="114.5" fill="none" stroke="#FFFFFF" stroke-opacity="0.08" stroke-width="3" />
+  <g transform="rotate(-9 256 262)" filter="url(#sombra)">
+    <!-- Mitad izquierda, que recibe la luz -->
+    <path d="M118 158 Q118 146 130 146 H256 V378 H130 Q118 378 118 366 Z" fill="url(#izq)" />
+    <!-- Mitad derecha, inclinada hacia atrás por el doblez: más estrecha y más oscura -->
+    <path d="M256 146 H376 Q388 146 388 158 V362 Q388 374 376 375 L256 378 Z" fill="url(#der)" />
+    <!-- Pliegue -->
+    <path d="M256 146 V378" stroke="#B4B5BB" stroke-width="2.5" />
+    <!-- El secreto -->
+    <path d="M256 194 C263 240 272 249 318 256 C272 263 263 272 256 318 C249 272 240 263 194 256 C240 249 249 240 256 194 Z" fill="#FF4530" />
+  </g>
+</svg>
