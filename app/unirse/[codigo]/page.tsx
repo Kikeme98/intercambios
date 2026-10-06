@@ -1,0 +1,36 @@
+import { sesion } from "@/lib/supabase";
+import { unirse } from "../../actions";
+import { Barra, Bezel, ErrorMsg, Icono } from "../../ui";
+
+export default async function Unirse({ params, searchParams }: PageProps<"/unirse/[codigo]">) {
+  const { codigo } = await params;
+  const { error } = (await searchParams) as Record<string, string | undefined>;
+  const { user } = await sesion(`/unirse/${codigo}`);
+  const nombre = user.user_metadata?.full_name ?? user.email?.split("@")[0] ?? "";
+
+  return (
+    <main>
+      <Barra atras="/" />
+      <h1 className="titulo text-[44px]">Te invitaron al intercambio</h1>
+      <p className="mt-3 text-muted">
+        Primero dinos cómo quieres aparecer en la lista.
+      </p>
+      <Bezel className="mt-8">
+        <form action={unirse} className="space-y-4">
+          <ErrorMsg msg={error} />
+          <input type="hidden" name="codigo" value={codigo} />
+          <label className="block space-y-2">
+            <span className="etiqueta">Tu nombre o apodo</span>
+            <input name="nombre" required maxLength={40} defaultValue={nombre} className="input" />
+          </label>
+          <button className="btn w-full">
+            Me apunto
+            <span className="btn-icono">
+              <Icono n="flecha" />
+            </span>
+          </button>
+        </form>
+      </Bezel>
+    </main>
+  );
+}

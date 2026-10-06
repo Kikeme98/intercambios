@@ -1,0 +1,353 @@
+"use client";
+
+import { createBrowserClient } from "@supabase/ssr";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { useEffect, useRef, useState } from "react";
+import { ESTADOS } from "@/lib/util";
+import { gsap, sinMovimiento, useGSAP } from "./motion";
+import { Icono } from "./ui";
+
+// Un solo cliente de Supabase en el navegador.
+let cliente: SupabaseClient | undefined;
+const sb = () => (cliente ??= createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!));
+
+/**
+ * CP, colonia, municipio y estado. Al escribir un CP válido se consultan las colonias del catálogo
+ * oficial (tabla codigo_postal) y se llenan municipio y estado. La colonia sugiere pero acepta texto libre.
+ */
+export function CamposCP({ d }: { d?: { cp: string; colonia: string; ciudad: string; estado: string } }) {
+  const [colonias, setColonias] = useState<string[]>([]);
+  const [colonia, setColonia] = useState(d?.colonia ?? "");
+  const [municipio, setMunicipio] = useState(d?.ciudad ?? "");
+  const [estado, setEstado] = useState(d?.estado ?? "");
+  const [aviso, setAviso] = useState("");
+
+  async function buscar(cp: string) {
+    if (!/^\d{5}$/.test(cp)) return setColonias([]);
+    const { data } = await sb().from("codigo_postal").select("colonia, municipio, estado").eq("cp", cp).order("colonia");
+    if (!data?.length) {
+      setColonias([]);
+      return setAviso("No encontramos ese CP. Llena tus datos a mano.");
+    }
+    setAviso("");
+    setColonias([...new Set(data.map((r) => r.colonia))]);
+    setMunicipio(data[0].municipio);
+    setEstado(data[0].estado);
+    setColonia(data.length === 1 ? data[0].colonia : (c) => (data.some((r) => r.colonia === c) ? c : ""));
+  }
+
+  return (
+    <>
+      <label className="block space-y-2">
+        <span className="etiqueta">Código postal</span>
+        <input
+          name="cp"
+          required
+          inputMode="numeric"
+          pattern="[0-9]{5}"
+          maxLength={5}
+          autoComplete="postal-code"
+          defaultValue={d?.cp}
+          onChange={(e) => buscar(e.target.value.trim())}
+          placeholder="Con él llenamos colonia, municipio y estado"
+          className="input"
+        />
+        {aviso && <span className="block text-xs text-accent-text">{aviso}</span>}
+      </label>
+      <label className="block space-y-2">
+        <span className="etiqueta">Colonia</span>
+        <input
+          name="colonia"
+          required
+          maxLength={80}
+          list="colonias-cp"
+          autoComplete="address-line2"
+          value={colonia}
+          onChange={(e) => setColonia(e.target.value)}
+          placeholder={colonias.length > 1 ? `Elige entre ${colonias.length} colonias` : undefined}
+          className="input"
+        />
+        <datalist id="colonias-cp">
+          {colonias.map((c) => (
+            <option key={c} value={c} />
+          ))}
+        </datalist>
+      </label>
+      <div className="grid grid-cols-2 gap-3">
+        <label className="block space-y-2">
+          <span className="etiqueta">Municipio o alcaldía</span>
+          <input name="ciudad" required maxLength={80} autoComplete="address-level2" value={municipio} onChange={(e) => setMunicipio(e.target.value)} className="input" />
+        </label>
+        <label className="block space-y-2">
+          <span className="etiqueta">Estado</span>
+          <select name="estado" required autoComplete="address-level1" value={estado} onChange={(e) => setEstado(e.target.value)} className="input">
+            <option value="" disabled>Elige</option>
+            {ESTADOS.map((e) => (
+              <option key={e}>{e}</option>
+            ))}
+          </select>
+        </label>
+      </div>
+    </>
+  );
+}
+
+export function Copiar({ texto }: { texto: string }) {
+  const [listo, setListo] = useState(false);
+  return (
+    <button
+      type="button"
+      className="btn w-full"
+      onClick={async () => {
+        if (navigator.share) return navigator.share({ title: "Súmate al intercambio de la GS", url: texto }).catch(() => {});
+        await navigator.clipboard.writeText(texto);
+        setListo(true);
+        setTimeout(() => setListo(false), 2000);
+      }}
+    >
+      {listo ? "Copiado, pégalo en el grupo" : "Pasar el link al grupo"}
+      <span className="btn-icono">
+        <Icono n="link" />
+      </span>
+    </button>
+  );
+}
+
+export function CopiarTexto({ texto, etiqueta }: { texto: string; etiqueta: string }) {
+  const [listo, setListo] = useState(false);
+  return (
+    <button
+      type="button"
+      className="btn-ghost w-full"
+      onClick={async () => {
+        await navigator.clipboard.writeText(texto);
+        setListo(true);
+        setTimeout(() => setListo(false), 2000);
+      }}
+    >
+      <Icono n={listo ? "check" : "copiar"} className="size-[18px]" />
+      {listo ? "Copiada" : etiqueta}
+    </button>
+  );
+}
+
+const R = 13;
+const C = 2 * Math.PI * R;
+
+/**
+ * El nombre se ve borroso hasta que mantienes presionado: un anillo se llena alrededor de la huella
+ * y al completarse el nombre se descifra letra por letra. La primera vez sueltan chispas.
+ */
+export function Revelar({ nombre }: { nombre: string }) {
+  const raiz = useRef<HTMLDivElement>(null);
+  const [ver, setVer] = useState(false);
+  const visible = useRef(false);
+  const primera = useRef(true);
+  const carga = useRef<gsap.core.Tween | null>(null);
+  const descifrado = useRef<gsap.core.Tween | null>(null);
+  const el = (sel: string) => raiz.current!.querySelector<HTMLElement>(sel)!;
+  // Los tweens nacen en eventos; al desmontar se matan.
+  useGSAP(() => () => gsap.killTweensOf(raiz.current?.querySelectorAll("*") ?? []), { scope: raiz });
+
+  const chispas = (n: Element) => {
+    const caja = raiz.current!.getBoundingClientRect();
+    const r = n.getBoundingClientRect();
+    for (let k = 0; k < 26; k++) {
+      const c = document.createElement("span");
+      c.className = "chispa";
+      raiz.current!.appendChild(c);
+      gsap.set(c, { left: r.left - caja.left + gsap.utils.random(0, r.width), top: r.top - caja.top + r.height * gsap.utils.random(0.3, 0.8) });
+      gsap.fromTo(
+        c,
+        { scale: gsap.utils.random(0.6, 1.6), opacity: 1 },
+        {
+          x: gsap.utils.random(-70, 70),
+          y: gsap.utils.random(-140, -30),
+          scale: 0,
+          opacity: 0,
+          duration: gsap.utils.random(0.9, 1.9),
+          delay: gsap.utils.random(0, 0.3),
+          ease: "power2.out",
+          onComplete: () => c.remove(),
+        },
+      );
+    }
+  };
+
+  const revelar = () => {
+    visible.current = true;
+    setVer(true);
+    navigator.vibrate?.(15);
+    const n = el(".nombre");
+    gsap.set(el(".anillo"), { strokeDashoffset: 0 });
+    gsap.to(n, { filter: "blur(0px)", opacity: 1, scale: 1, duration: 0.8, overwrite: "auto" });
+    if (sinMovimiento()) return;
+    // Mientras se descifra, la altura queda fija y las letras al azar salen del propio nombre (mismo ancho aprox.):
+    // así la tarjeta no crece, el botón no se mueve bajo el dedo y el nombre no se esconde solo.
+    gsap.set(n, { height: n.offsetHeight });
+    descifrado.current = gsap.to(n, {
+      duration: 1.1,
+      scrambleText: { text: nombre, chars: nombre.replace(/\s/g, ""), speed: 0.5, revealDelay: 0.2 },
+      onComplete: () => gsap.set(n, { clearProps: "height" }),
+    });
+    if (primera.current) {
+      primera.current = false;
+      chispas(n);
+    }
+  };
+
+  const ocultar = () => {
+    carga.current?.kill();
+    gsap.to(el(".anillo"), { strokeDashoffset: C, duration: 0.4, ease: "power2.out" });
+    if (!visible.current) return;
+    visible.current = false;
+    setVer(false);
+    if (descifrado.current?.isActive()) {
+      descifrado.current.kill();
+      el(".nombre").textContent = nombre;
+      gsap.set(el(".nombre"), { clearProps: "height" });
+    }
+    gsap.to(el(".nombre"), { filter: "blur(16px)", opacity: 0.55, scale: 0.98, duration: 0.5, ease: "power2.out", overwrite: "auto" });
+  };
+
+  const presionar = (e: React.PointerEvent<HTMLButtonElement>) => {
+    // Captura el puntero: aunque el dedo se mueva un poco, solo se esconde al soltar.
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // Puntero ya inexistente: se sigue sin captura.
+    }
+    if (sinMovimiento()) return revelar();
+    carga.current = gsap.fromTo(el(".anillo"), { strokeDashoffset: C }, { strokeDashoffset: 0, duration: 0.6, ease: "power1.in", onComplete: revelar });
+  };
+
+  return (
+    <div ref={raiz} className="relative space-y-5">
+      <p className="nombre titulo select-none text-[54px] [text-wrap:balance]" style={{ filter: "blur(16px)", opacity: 0.55, transform: "scale(0.98)", transformOrigin: "0% 50%" }}>
+        {nombre}
+      </p>
+      <button
+        type="button"
+        aria-pressed={ver}
+        onPointerDown={presionar}
+        onPointerUp={ocultar}
+        onPointerCancel={ocultar}
+        onLostPointerCapture={ocultar}
+        onContextMenu={(e) => e.preventDefault()}
+        // Teclado: Enter/Espacio alterna (click con detail 0 no viene de un puntero).
+        onClick={(e) => e.detail === 0 && (visible.current ? ocultar() : revelar())}
+        className="btn-ghost w-full touch-none select-none [-webkit-touch-callout:none]"
+      >
+        <span className="relative grid size-8 place-items-center">
+          <svg viewBox="0 0 32 32" className="absolute inset-0 -rotate-90" aria-hidden>
+            <circle cx="16" cy="16" r={R} fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="2" />
+            <circle className="anillo" cx="16" cy="16" r={R} fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeDasharray={C} strokeDashoffset={C} />
+          </svg>
+          <Icono n="huella" className="size-4 text-accent-text" />
+        </span>
+        {ver ? "Suelta para esconderlo" : "Deja presionado para ver"}
+      </button>
+    </div>
+  );
+}
+
+type Mensaje = { id: number; de_santa: boolean; texto: string; creado: string };
+
+export function Chat({ intercambio, receptor, soySanta, inicial }: { intercambio: string; receptor: string; soySanta: boolean; inicial: Mensaje[] }) {
+  const [supabase] = useState(sb);
+  const [mensajes, setMensajes] = useState(inicial);
+  const [error, setError] = useState("");
+  const fin = useRef<HTMLDivElement>(null);
+  const agregar = (m: Mensaje) => setMensajes((l) => (l.some((x) => x.id === m.id) ? l : [...l, m]));
+
+  useEffect(() => {
+    // RLS filtra: solo llegan mensajes de hilos donde participo.
+    const canal = supabase
+      .channel(`chat-${intercambio}-${receptor}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "mensaje", filter: `receptor_id=eq.${receptor}` }, (p) => {
+        if (p.new.intercambio_id === intercambio) agregar(p.new as Mensaje);
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(canal);
+    };
+  }, [supabase, intercambio, receptor]);
+
+  useEffect(() => {
+    fin.current?.scrollIntoView({ behavior: "smooth" });
+  }, [mensajes]);
+
+  // Cada burbuja nueva entra con resorte desde su lado.
+  const lista = useRef<HTMLOListElement>(null);
+  const vistos = useRef(inicial.length); // lo que ya estaba se muestra de una; solo lo nuevo anima
+  useGSAP(
+    () => {
+      const todas = gsap.utils.toArray<HTMLElement>(".burbuja", lista.current);
+      const nuevas = todas.slice(vistos.current);
+      vistos.current = todas.length;
+      if (!nuevas.length) return;
+      if (sinMovimiento()) return;
+      nuevas.forEach((el, k) => {
+        const mia = el.dataset.mia === "1";
+        gsap.fromTo(
+          el,
+          { autoAlpha: 0, x: mia ? 36 : -36, y: 12, scale: 0.8, transformOrigin: mia ? "100% 100%" : "0% 100%" },
+          { autoAlpha: 1, x: 0, y: 0, scale: 1, duration: 0.9, ease: "back.out(1.7)", delay: Math.min(k, 10) * 0.05 },
+        );
+      });
+    },
+    { dependencies: [mensajes.length], scope: lista },
+  );
+
+  async function enviar(f: FormData) {
+    const texto = String(f.get("texto") ?? "").trim();
+    if (!texto) return;
+    const { data, error } = await supabase
+      .from("mensaje")
+      .insert({ intercambio_id: intercambio, receptor_id: receptor, de_santa: soySanta, texto })
+      .select("id, de_santa, texto, creado")
+      .single();
+    if (error) setError("No se envió. Revisa tu conexión e intenta otra vez.");
+    else {
+      setError("");
+      agregar(data);
+    }
+  }
+
+  return (
+    <>
+      <ol ref={lista} className="flex flex-col gap-2 pb-28">
+        {mensajes.length === 0 && (
+          <li className="rounded-[26px] border border-dashed border-line px-6 py-10 text-center text-sm text-muted">
+            {soySanta ? "Pregúntale talla, colores, lo que sea. No va a saber que eres tú." : "Tu santa no ha escrito. Échale pistas de lo que quieres."}
+          </li>
+        )}
+        {mensajes.map((m) => {
+          const mio = m.de_santa === soySanta;
+          return (
+            <li
+              key={m.id}
+              data-mia={mio ? "1" : "0"}
+              className={`burbuja max-w-[80%] rounded-[20px] px-4 py-2.5 text-[15px] leading-snug ${mio ? "self-end bg-ink text-bg" : "self-start border border-line bg-core"}`}
+            >
+              {m.texto}
+            </li>
+          );
+        })}
+        <div ref={fin} />
+      </ol>
+      <form action={enviar} className="fixed inset-x-0 bottom-0">
+        <div className="relative mx-auto flex max-w-md gap-2 px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          {error && <p className="error absolute -top-14 left-5 right-5">{error}</p>}
+          <label htmlFor="texto" className="sr-only">Mensaje</label>
+          <div className="campo flex-1">
+            <input id="texto" name="texto" placeholder="Escribe un mensaje" autoComplete="off" maxLength={1000} />
+            <button className="accion" aria-label="Enviar">
+              <Icono n="enviar" className="size-5" />
+            </button>
+          </div>
+        </div>
+      </form>
+    </>
+  );
+}

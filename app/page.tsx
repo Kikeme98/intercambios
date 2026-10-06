@@ -1,69 +1,89 @@
-import Image from "next/image";
+import Link from "next/link";
+import { ViewTransition } from "react";
+import { sesion } from "@/lib/supabase";
+import { fecha, pesos } from "@/lib/util";
+import { crearIntercambio, salir } from "./actions";
+import { Barra, Bezel, ErrorMsg, Icono } from "./ui";
 
-export default function Home() {
+export default async function Inicio({ searchParams }: PageProps<"/">) {
+  const { error } = (await searchParams) as Record<string, string | undefined>;
+  const { supabase } = await sesion();
+  const { data: lista } = await supabase
+    .from("intercambio")
+    .select("id, nombre, fecha, presupuesto, estado")
+    .order("creado", { ascending: false });
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+    <main>
+      <Barra>
+        <form action={salir}>
+          <button className="btn-ghost h-10 px-4 text-sm text-muted">Salir</button>
+        </form>
+      </Barra>
+
+      <h1 className="titulo text-[44px]">Tus intercambios</h1>
+      <div className="mt-6">
+        <ErrorMsg msg={error} />
+      </div>
+
+      <ul className="space-y-3">
+        {lista?.map((i) => (
+          <li key={i.id}>
+            <Link href={`/i/${i.id}`} prefetch={true} data-tilt className="block [transform-style:preserve-3d]">
+              <Bezel>
+                <div className="flex items-end justify-between gap-4">
+                  <div className="min-w-0">
+                    <ViewTransition name={`intercambio-${i.id}`}>
+                      <p className="titulo truncate text-2xl">{i.nombre}</p>
+                    </ViewTransition>
+                    <p className="dato mt-2">
+                      {[i.fecha && fecha(i.fecha), i.presupuesto && pesos(i.presupuesto)].filter(Boolean).join(" / ") || "Sin fecha"}
+                    </p>
+                  </div>
+                  <span className={`shrink-0 text-sm ${i.estado === "sorteado" ? "text-accent-text" : "text-muted"}`}>
+                    {i.estado === "sorteado" ? "Ya hay sorteo" : "Falta el sorteo"}
+                  </span>
+                </div>
+              </Bezel>
+            </Link>
+          </li>
+        ))}
+        {lista?.length === 0 && (
+          <li className="rounded-[32px] border border-dashed border-line p-8 text-center text-sm text-muted">
+            Todavía no estás en ningún intercambio. Abre el link que te pasaron en el grupo o arma uno nuevo.
+          </li>
+        )}
+      </ul>
+
+      <details className="group mt-8 [&_summary::-webkit-details-marker]:hidden">
+        <summary className="btn-ghost w-full cursor-pointer list-none">
+          <Icono n="mas" className="size-4 transition-transform duration-300 group-open:rotate-45" /> Armar un intercambio
+        </summary>
+        <Bezel className="mt-3">
+          <form action={crearIntercambio} className="space-y-4">
+            <label className="block space-y-2">
+              <span className="etiqueta">Nombre</span>
+              <input name="nombre" required maxLength={80} placeholder="Navidad GS 2026" className="input" />
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="block space-y-2">
+                <span className="etiqueta">Fecha</span>
+                <input name="fecha" type="date" className="input" />
+              </label>
+              <label className="block space-y-2">
+                <span className="etiqueta">Presupuesto</span>
+                <input name="presupuesto" type="number" min={0} step={50} inputMode="numeric" placeholder="600" className="input" />
+              </label>
+            </div>
+            <button className="btn w-full">
+              Crear intercambio
+              <span className="btn-icono">
+                <Icono n="flecha" />
+              </span>
+            </button>
+          </form>
+        </Bezel>
+      </details>
+    </main>
   );
 }

@@ -1,26 +1,141 @@
 @import "tailwindcss";
 
+/* Ver DESIGN.md: tema Noche, solo oscuro, un acento (Brasa). */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: dark;
+  --bg: #08090a;
+  --ink: #ededef;
+  --muted: #9a9ba1;
+  --line: rgba(255, 255, 255, 0.08);
+  --glass: rgba(255, 255, 255, 0.035);
+  --core: rgba(18, 19, 21, 0.78);
+  --accent: #ff4530;
+  --accent-text: #ff6b5e;
+  --ease: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-bg: var(--bg);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-glass: var(--glass);
+  --color-core: var(--core);
+  --color-accent: var(--accent);
+  --color-accent-text: var(--accent-text);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+body {
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.5;
+  -webkit-tap-highlight-color: transparent;
+}
+
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+
+/*
+ * Liquid glass (aproximación web; Apple no publica uno para la web):
+ * vidrio esmerilado + saturación + brillos especulares en los filos.
+ * En Chromium se suma refracción real con el filtro SVG #refraccion.
+ */
+@utility vidrio {
+  background: linear-gradient(140deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.025) 45%, rgba(255, 255, 255, 0.06));
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  backdrop-filter: blur(16px) saturate(180%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.06),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.07),
+    0 18px 50px -24px rgba(0, 0, 0, 0.7);
+}
+
+@layer components {
+  /* Doble marco: bandeja de vidrio líquido + núcleo concéntrico */
+  .bezel { @apply vidrio relative rounded-[32px] p-1.5; }
+  .bezel-core { @apply rounded-[26px] bg-core p-5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.07)]; }
+  /* Luz que sigue al cursor en tarjetas inclinables */
+  [data-tilt] .bezel::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 50%), rgba(255, 255, 255, 0.09), transparent 60%);
+    opacity: var(--luz, 0);
+    transition: opacity 500ms var(--ease);
+  }
+
+  .btn {
+    @apply inline-flex h-[58px] items-center justify-between gap-3 rounded-full bg-ink pl-6 pr-[7px] font-medium text-bg disabled:opacity-40;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 -2px 6px rgba(0, 0, 0, 0.12), 0 14px 30px -14px rgba(255, 69, 48, 0.35);
+  }
+  .btn-icono { @apply grid size-11 shrink-0 place-items-center rounded-full bg-accent text-bg shadow-[inset_0_1px_0_rgba(255,255,255,0.45)]; }
+  .btn-ghost { @apply vidrio inline-flex h-12 items-center justify-center gap-2 rounded-full px-5 text-[15px]; }
+  .redondo { @apply vidrio grid size-11 place-items-center rounded-full; }
+
+  /* Regla de forma: todo lo interactivo es píldora; las tarjetas, 32/26px. */
+  .input {
+    @apply h-12 w-full rounded-full border border-line bg-glass px-5 text-[15px] outline-none placeholder:text-muted focus:border-ink;
+    transition: border-color 300ms var(--ease);
+  }
+  /* Campo agrupado: input(s) y su botón en una sola píldora de vidrio */
+  .campo { @apply vidrio flex h-14 items-center gap-2 rounded-full pl-5 pr-1.5; }
+  .grupo { @apply vidrio rounded-[28px] p-1.5; }
+  .campo:focus-within, .grupo:focus-within { outline: 1px solid rgba(255, 255, 255, 0.4); }
+  .campo :is(input, select), .grupo :is(input, select) {
+    @apply h-full min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-muted;
+  }
+  .campo :is(input, select):focus-visible, .grupo :is(input, select):focus-visible { outline: none; }
+  .accion { @apply grid size-11 shrink-0 place-items-center rounded-full bg-accent text-bg shadow-[inset_0_1px_0_rgba(255,255,255,0.45)] transition-transform duration-300 hover:scale-105 active:scale-95; }
+  .etiqueta { @apply text-sm text-muted; }
+  .dato { @apply font-mono text-xs text-muted; }
+  .error { @apply rounded-[26px] border border-accent/40 bg-accent/10 px-4 py-3 text-sm text-accent-text; }
+  .titulo { @apply font-semibold leading-[1.02] tracking-[-0.045em]; }
+  .chispa { @apply pointer-events-none absolute size-1.5 rounded-full bg-accent; }
+}
+
+.refraccion .vidrio,
+.refraccion .bezel,
+.refraccion .btn-ghost,
+.refraccion .redondo {
+  -webkit-backdrop-filter: url(#refraccion) blur(12px) saturate(180%);
+  backdrop-filter: url(#refraccion) blur(12px) saturate(180%);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .vidrio, .bezel, .btn-ghost, .redondo {
+    background: #16171a;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* En touch no hay GSAP de cursor: feedback de presión en CSS */
+@media (hover: none) {
+  .btn, .btn-ghost, .redondo { transition: transform 300ms var(--ease); }
+  .btn:active, .btn-ghost:active, .redondo:active { transform: scale(0.97); }
+}
+@media (hover: hover) {
+  .btn-ghost:hover, .redondo:hover { background-color: rgba(255, 255, 255, 0.09); }
+}
+
+/* Brillo de fondo: el envoltorio sigue al cursor (GSAP), el brillo deriva (CSS) */
+.brillo-sigue { position: fixed; inset: 0; pointer-events: none; }
+.brillo {
+  position: absolute;
+  width: 560px;
+  height: 560px;
+  top: -240px;
+  right: -260px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 69, 48, 0.2), rgba(255, 69, 48, 0) 65%);
+  animation: deriva 22s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+@keyframes deriva { 50% { transform: translate(-60px, 40px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .brillo { animation: none; }
 }
