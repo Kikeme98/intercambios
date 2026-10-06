@@ -1,7 +1,7 @@
 // node --test lib/util.test.ts
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { diasPara, formatoDireccion, leerMeta, modoLigero, rutaSegura, telefono10, urlPublica } from "./util.ts";
+import { diasPara, formatoDireccion, leerMeta, rutaSegura, telefono10, urlPublica } from "./util.ts";
 
 test("rutaSegura", () => {
   assert.equal(rutaSegura("/unirse/abc"), "/unirse/abc");
@@ -45,13 +45,4 @@ test("formatoDireccion", () => {
   assert.match(formatoDireccion({ ...d, referencias: "Portón negro" }), /\nReferencias: Portón negro$/);
   const us = { pais: "US" as const, recibe: "Mike Turner", calle: "1200 Main St, Apt 4B", colonia: null, cp: "78701", ciudad: "Austin", estado: "Texas", telefono: "5125550123", referencias: null };
   assert.equal(formatoDireccion(us), "Mike Turner\n1200 Main St, Apt 4B\nAustin, Texas 78701\nEstados Unidos\nTel. +1 (512) 555-0123");
-});
-
-test("modoLigero", () => {
-  assert.equal(modoLigero({ fps: 58, memoriaGB: 8, nucleos: 8 }), false);
-  assert.equal(modoLigero({ fps: 31 }), true);
-  assert.equal(modoLigero({ memoriaGB: 2 }), true);
-  assert.equal(modoLigero({ nucleos: 2 }), true);
-  assert.equal(modoLigero({ menosTransparencia: true, fps: 60 }), true);
-  assert.equal(modoLigero({}), false); // sin datos: se queda el vidrio
 });

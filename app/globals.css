@@ -8,7 +8,7 @@
   --muted: #9a9ba1;
   --line: rgba(255, 255, 255, 0.08);
   --glass: rgba(255, 255, 255, 0.035);
-  --core: rgba(18, 19, 21, 0.78);
+  --core: #121315;
   --accent: #ff4530;
   --accent-text: #ff6b5e;
   --ease: cubic-bezier(0.32, 0.72, 0, 1);
@@ -37,14 +37,11 @@ body {
 :focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
 
 /*
- * Liquid glass (aproximación web; Apple no publica uno para la web):
- * vidrio esmerilado + saturación + brillos especulares en los filos.
- * En Chromium se suma refracción real con el filtro SVG #refraccion.
+ * Superficie sólida con filos de luz (antes liquid glass; se quitó porque el desenfoque y la refracción
+ * costaban mucho rendimiento y se veía casi igual). Ver DESIGN.md.
  */
 @utility vidrio {
-  background: linear-gradient(140deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.025) 45%, rgba(255, 255, 255, 0.06));
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
-  backdrop-filter: blur(16px) saturate(180%);
+  background: #16171a;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.28),
     inset 0 -1px 0 rgba(255, 255, 255, 0.06),
@@ -53,7 +50,7 @@ body {
 }
 
 @layer components {
-  /* Doble marco: bandeja de vidrio líquido + núcleo concéntrico */
+  /* Doble marco: bandeja con filos de luz + núcleo concéntrico */
   .bezel { @apply vidrio relative rounded-[32px] p-1.5; }
   .bezel-core { @apply rounded-[26px] bg-core p-5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.07)]; }
   /* Luz que sigue al cursor en tarjetas inclinables */
@@ -97,26 +94,6 @@ body {
   .chispa { @apply pointer-events-none absolute size-1.5 rounded-full bg-accent; }
 }
 
-.refraccion .vidrio,
-.refraccion .bezel,
-.refraccion .btn-ghost,
-.refraccion .redondo {
-  -webkit-backdrop-filter: url(#refraccion) blur(12px) saturate(180%);
-  backdrop-filter: url(#refraccion) blur(12px) saturate(180%);
-}
-
-/*
- * Modo ligero (html.ligero, lo decide Efectos en motion.tsx): equipo lento, pocos fps o "reducir transparencia".
- * El vidrio pasa a superficie sólida con los mismos filos de luz; sin desenfoque ni refracción, que es lo caro.
- */
-.ligero :is(.vidrio, .bezel, .btn-ghost, .redondo, .campo, .grupo) {
-  background: #16171a;
-  -webkit-backdrop-filter: none !important;
-  backdrop-filter: none !important;
-}
-.ligero .bezel-core { background: #121315; }
-.ligero .santa { filter: none; }
-.ligero .nieve::after { display: none; }
 
 /* En touch no hay GSAP de cursor: feedback de presión en CSS */
 @media (hover: none) {

@@ -1,7 +1,7 @@
 # Design System: Intercambio GS · Noche
 
 ## 1. Visual Theme & Atmosphere
-Una app nocturna y privada, como abrir un regalo en un cuarto oscuro. Fondo casi negro con un solo brillo rojo que deriva muy lento detrás del contenido, como una luz de navidad desenfocada. Las superficies son placas de vidrio ahumado dentro de una bandeja (doble marco), con bordes de luz de 1px. Lo importante es el secreto: los nombres se ven borrosos hasta que tú decides verlos.
+Una app nocturna y privada, como abrir un regalo en un cuarto oscuro. Fondo casi negro con un solo brillo rojo que deriva muy lento detrás del contenido, como una luz de navidad desenfocada. Las superficies son placas oscuras sólidas dentro de una bandeja (doble marco), con bordes de luz de 1px. Lo importante es el secreto: los nombres se ven borrosos hasta que tú decides verlos.
 
 - Densidad 3, "Daily App airy": una sola columna, mucho aire entre bloques.
 - Variación 6: alineado a la izquierda, tipografía grande contra texto pequeño.
@@ -30,11 +30,10 @@ Nada de morado, neón ni negro puro. El error también usa Brasa: un solo acento
 - **Prohibido:** Inter, cualquier serif (es UI de software), mayúsculas con tracking amplio como etiqueta en cada sección.
 
 ## 4. Component Stylings
-- **Liquid glass:** la bandeja de vidrio lleva desenfoque 16px, saturación 180% y brillos especulares en el filo superior. En Chromium se suma refracción real con un filtro SVG de desplazamiento, que tiembla con resorte al tocarlo. Con `prefers-reduced-transparency` se vuelve sólido (#16171A). Se usa en la barra superior, las tarjetas, los botones secundarios y los campos.
-- **Modo ligero** (`html.ligero`): si el equipo tiene menos de 4 GB de memoria, 2 núcleos o menos, pidió "reducir transparencia", o si al cargar mide menos de 40 fps, el vidrio pasa a superficie sólida (#16171A, núcleo #121315) con los mismos filos de luz. Se quitan el desenfoque, la refracción, la capa de nieve desenfocada y el resplandor de Santa. La decisión se recuerda 3 días en ese equipo (`localStorage`) y luego se vuelve a medir. Las pausas por cambiar de pestaña no cuentan como lentitud.
-- **Doble marco (Bezel):** bandeja exterior de liquid glass, padding 6px y radio 32px. Adentro, el Núcleo con radio 26px (concéntrico) y un brillo interior `inset 0 1px 1px rgba(255,255,255,0.07)`. Es la tarjeta de todo lo importante.
+- **Superficie sólida** (antes liquid glass): fondo #16171A con brillo especular en el filo superior, filos de 1px y sombra suave. Se quitaron el desenfoque y la refracción porque costaban mucho rendimiento y se veía casi igual. Se usa en la barra superior, las tarjetas, los botones secundarios y los campos.
+- **Doble marco (Bezel):** bandeja exterior sólida, padding 6px y radio 32px. Adentro, el Núcleo con radio 26px (concéntrico) y un brillo interior `inset 0 1px 1px rgba(255,255,255,0.07)`. Es la tarjeta de todo lo importante.
 - **Botón primario:** píldora Tiza con texto Noche, altura 58px. El ícono va en su propio círculo Brasa pegado al borde derecho; con el cursor solo ese círculo se mueve, nunca el botón. Al presionar baja a `scale(0.98)`.
-- **Botón secundario:** píldora de liquid glass con texto Tiza.
+- **Botón secundario:** píldora sólida con filos de luz y texto Tiza.
 - **Revelar:** el nombre de tu persona aparece con `blur(16px)` y opacidad 0.55. Se ve solo mientras mantienes presionado (o con Enter/Espacio desde el teclado), con una vibración corta en Android. El texto siempre está en el DOM para lectores de pantalla.
 - **Regla de forma:** todo lo interactivo es píldora (radio completo); las tarjetas usan 32px por fuera y 26px por dentro. Nada de esquinas de 16px.
 - **Campos agrupados:** un input y su botón viven en una sola píldora de Vidrio, con el botón acoplado adentro a la derecha (círculo Brasa de 44px). Si son dos inputs para una acción, van en un grupo de 28px separados por un filo de 1px.
@@ -56,7 +55,7 @@ Motor: GSAP 3 (SplitText, ScrambleText y Flip) con `@gsap/react`. La capa global
 - Cursor (solo pointer fino): el círculo del ícono del CTA se mueve hacia el cursor, pero el botón no se mueve para no romper su grupo. Las tarjetas se inclinan hasta 4° con una luz que sigue al cursor, y el brillo de fondo sigue al cursor con 3 s de inercia.
 - Navegación: el nombre del intercambio se transforma de la lista al detalle con `<ViewTransition>`.
 - Navidad (CSS, capas fijas y solo `transform` u `opacity`): serie de 12 focos colgando arriba que parpadean a destiempo (2.6 s, escalonados); nieve en dos capas con profundidad (45 s y 28 s); el brillo pino deriva al revés que el rojo.
-- Rendimiento del vidrio: la nieve y la serie van **por delante** del contenido (z 30, sin bloquear toques). Si algo animado pasara por detrás del vidrio, cada pieza con refracción se recalcularía en cada cuadro y el celular se trabaría. Por la misma razón, el parpadeo anima solo opacidad.
+- Nieve y serie de luces van por delante del contenido (z 30, sin bloquear toques); el parpadeo anima solo opacidad.
 - Santa: trineo dorado con dos renos (el primero con nariz roja) que cruza el cielo cada 40 s, tarda unos 9 s y flota, con una estela tenue. Se oculta con `prefers-reduced-motion`.
 - Música: botón "Jingle Bell Rock" abajo a la derecha que abre el reproductor oficial de Spotify (sencillo de 1957) en una tarjeta de vidrio. Vive en el layout para no cortarse al navegar. Nunca suena sola: se le da play.
 - Todo se apaga con `prefers-reduced-motion`. Solo se animan `transform`, `opacity` y `filter`.

@@ -20,14 +20,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="es-MX" className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
       <body className="min-h-dvh overflow-x-hidden font-sans">
-        {/* Refracción del liquid glass: ruido suavizado que desplaza lo que hay detrás del vidrio. */}
-        <svg width="0" height="0" className="absolute" aria-hidden>
-          <filter id="refraccion" x="0" y="0" width="100%" height="100%" colorInterpolationFilters="sRGB">
-            <feTurbulence type="fractalNoise" baseFrequency="0.006 0.011" numOctaves="2" seed="11" result="ruido" />
-            <feGaussianBlur in="ruido" stdDeviation="3" result="suave" />
-            <feDisplacementMap in="SourceGraphic" in2="suave" scale="34" xChannelSelector="R" yChannelSelector="G" />
-          </filter>
-        </svg>
         <div className="brillo-sigue" aria-hidden>
           <div className="brillo" />
           <div className="brillo-pino" />
