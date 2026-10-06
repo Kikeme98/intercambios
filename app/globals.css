@@ -105,13 +105,18 @@ body {
   backdrop-filter: url(#refraccion) blur(12px) saturate(180%);
 }
 
-@media (prefers-reduced-transparency: reduce) {
-  .vidrio, .bezel, .btn-ghost, .redondo {
-    background: #16171a;
-    -webkit-backdrop-filter: none !important;
-    backdrop-filter: none !important;
-  }
+/*
+ * Modo ligero (html.ligero, lo decide Efectos en motion.tsx): equipo lento, pocos fps o "reducir transparencia".
+ * El vidrio pasa a superficie sólida con los mismos filos de luz; sin desenfoque ni refracción, que es lo caro.
+ */
+.ligero :is(.vidrio, .bezel, .btn-ghost, .redondo, .campo, .grupo) {
+  background: #16171a;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
 }
+.ligero .bezel-core { background: #121315; }
+.ligero .santa { filter: none; }
+.ligero .nieve::after { display: none; }
 
 /* En touch no hay GSAP de cursor: feedback de presión en CSS */
 @media (hover: none) {

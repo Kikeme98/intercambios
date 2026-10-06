@@ -88,3 +88,14 @@ export function formatoDireccion(d: Direccion) {
     d.referencias && `Referencias: ${d.referencias}`,
   ].filter(Boolean).join("\n");
 }
+
+/**
+ * ¿Conviene el modo ligero (sin vidrio esmerilado ni refracción)?
+ * Pistas del equipo primero; si no hay, decide con los cuadros por segundo medidos.
+ */
+export function modoLigero(p: { fps?: number; memoriaGB?: number; nucleos?: number; menosTransparencia?: boolean }) {
+  if (p.menosTransparencia) return true;
+  if (p.memoriaGB !== undefined && p.memoriaGB < 4) return true;
+  if (p.nucleos !== undefined && p.nucleos <= 2) return true;
+  return p.fps !== undefined && p.fps < 40;
+}

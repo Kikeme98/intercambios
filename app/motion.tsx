@@ -7,6 +7,7 @@ import { useGSAP } from "@gsap/react";
 import { Flip } from "gsap/Flip";
 import { ScrambleTextPlugin } from "gsap/ScrambleTextPlugin";
 import { SplitText } from "gsap/SplitText";
+import { modoLigero } from "@/lib/util";
 import { Icono } from "./ui";
 
 gsap.registerPlugin(useGSAP, Flip, ScrambleTextPlugin, SplitText);
@@ -25,6 +26,7 @@ export function Efectos() {
     // Liquid glass con refracción real (backdrop-filter: url()) solo existe en Chromium.
     const marcas = (navigator as Navigator & { userAgentData?: { brands: { brand: string }[] } }).userAgentData?.brands;
     if (marcas?.some((m) => m.brand === "Chromium")) document.documentElement.classList.add("refraccion");
+    const cancelarMedicion = decidirModoLigero();
 
     const mm = gsap.matchMedia();
     mm.add(
@@ -129,9 +131,92 @@ export function Efectos() {
         };
       },
     );
-    return () => mm.revert();
+    return () => {
+      cancelarMedicion();
+      mm.revert();
+    };
   }, []);
   return null;
+}
+
+const CLAVE_MODO = "intercambio-gs:modo-ligero";
+const VIGENCIA = 3 * 24 * 60 * 60 * 1000; // vuelve a medir a los 3 días, por si fue algo pasajero
+
+/**
+ * Activa html.ligero si el equipo no aguanta el vidrio. Primero pistas del equipo; si no alcanzan,
+ * mide fps 1.5 s (tras 1 s de calentamiento, y solo con la pestaña visible). Recuerda la decisión.
+ * Devuelve una función para cancelar la medición.
+ */
+function decidirModoLigero() {
+  const raiz = document.documentElement;
+  const activar = () => raiz.classList.add("ligero");
+  const guardar = (ligero: boolean) => {
+    try {
+      localStorage.setItem(CLAVE_MODO, JSON.stringify({ ligero, hasta: Date.now() + VIGENCIA }));
+    } catch {}
+  };
+  try {
+    const previo = JSON.parse(localStorage.getItem(CLAVE_MODO) ?? "null");
+    if (previo && previo.hasta > Date.now()) {
+      if (previo.ligero) activar();
+      return () => {};
+    }
+  } catch {}
+
+  const nav = navigator as Navigator & { deviceMemory?: number };
+  const pistas = {
+    memoriaGB: nav.deviceMemory,
+    nucleos: nav.hardwareConcurrency || undefined,
+    menosTransparencia: matchMedia("(prefers-reduced-transparency: reduce)").matches,
+  };
+  if (modoLigero(pistas)) {
+    activar();
+    guardar(true);
+    return () => {};
+  }
+
+  let raf = 0;
+  let espera = 0;
+  let midiendo = false;
+  const medir = () => {
+    if (document.hidden || midiendo) return; // oculta: no hay cuadros; se intenta al volver
+    midiendo = true;
+    let cuadros = 0;
+    let inicio = 0;
+    let ultimo = 0;
+    let reinicios = 0;
+    const paso = (t: number) => {
+      // Un hueco largo es una pausa (cambio de pestaña), no lentitud: se reinicia la medición.
+      // Pero si pasa una y otra vez, el equipo de verdad no da: modo ligero.
+      if (!inicio || t - ultimo > 250) {
+        if (inicio && ++reinicios >= 5) {
+          activar();
+          guardar(true);
+          document.removeEventListener("visibilitychange", medir);
+          return;
+        }
+        inicio = t;
+        cuadros = 0;
+      }
+      ultimo = t;
+      cuadros++;
+      if (t - inicio < 1500) raf = requestAnimationFrame(paso);
+      else {
+        const ligero = modoLigero({ ...pistas, fps: (cuadros * 1000) / (t - inicio) });
+        if (ligero) activar();
+        guardar(ligero);
+        document.removeEventListener("visibilitychange", medir);
+      }
+    };
+    raf = requestAnimationFrame(paso);
+  };
+  espera = window.setTimeout(medir, 1000);
+  document.addEventListener("visibilitychange", medir);
+  return () => {
+    clearTimeout(espera);
+    cancelAnimationFrame(raf);
+    document.removeEventListener("visibilitychange", medir);
+  };
 }
 
 /** Titular que sube letra por letra desde una máscara por línea. */

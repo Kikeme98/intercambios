@@ -31,6 +31,7 @@ Nada de morado, neón ni negro puro. El error también usa Brasa: un solo acento
 
 ## 4. Component Stylings
 - **Liquid glass:** la bandeja de vidrio lleva desenfoque 16px, saturación 180% y brillos especulares en el filo superior. En Chromium se suma refracción real con un filtro SVG de desplazamiento, que tiembla con resorte al tocarlo. Con `prefers-reduced-transparency` se vuelve sólido (#16171A). Se usa en la barra superior, las tarjetas, los botones secundarios y los campos.
+- **Modo ligero** (`html.ligero`): si el equipo tiene menos de 4 GB de memoria, 2 núcleos o menos, pidió "reducir transparencia", o si al cargar mide menos de 40 fps, el vidrio pasa a superficie sólida (#16171A, núcleo #121315) con los mismos filos de luz. Se quitan el desenfoque, la refracción, la capa de nieve desenfocada y el resplandor de Santa. La decisión se recuerda 3 días en ese equipo (`localStorage`) y luego se vuelve a medir. Las pausas por cambiar de pestaña no cuentan como lentitud.
 - **Doble marco (Bezel):** bandeja exterior de liquid glass, padding 6px y radio 32px. Adentro, el Núcleo con radio 26px (concéntrico) y un brillo interior `inset 0 1px 1px rgba(255,255,255,0.07)`. Es la tarjeta de todo lo importante.
 - **Botón primario:** píldora Tiza con texto Noche, altura 58px. El ícono va en su propio círculo Brasa pegado al borde derecho; con el cursor solo ese círculo se mueve, nunca el botón. Al presionar baja a `scale(0.98)`.
 - **Botón secundario:** píldora de liquid glass con texto Tiza.
