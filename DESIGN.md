@@ -54,7 +54,10 @@ Motor: GSAP 3 (SplitText, ScrambleText y Flip) con `@gsap/react`. La capa global
 - Sortear: las fichas de participantes se barajan con Flip seis veces y regresan a su orden antes de enviar.
 - Cursor (solo pointer fino): el círculo del ícono del CTA se mueve hacia el cursor, pero el botón no se mueve para no romper su grupo. Las tarjetas se inclinan hasta 4° con una luz que sigue al cursor, y el brillo de fondo sigue al cursor con 3 s de inercia.
 - Navegación: el nombre del intercambio se transforma de la lista al detalle con `<ViewTransition>`.
-- Navidad (CSS, capas fijas y solo `transform` u `opacity`): serie de 12 focos colgando arriba que parpadean a destiempo (2.6 s, escalonados); nieve en dos capas con profundidad (45 s y 28 s); el brillo pino deriva al revés que el rojo. La barra de vidrio refracta los focos.
+- Navidad (CSS, capas fijas y solo `transform` u `opacity`): serie de 12 focos colgando arriba que parpadean a destiempo (2.6 s, escalonados); nieve en dos capas con profundidad (45 s y 28 s); el brillo pino deriva al revés que el rojo.
+- Rendimiento del vidrio: la nieve y la serie van **por delante** del contenido (z 30, sin bloquear toques). Si algo animado pasara por detrás del vidrio, cada pieza con refracción se recalcularía en cada cuadro y el celular se trabaría. Por la misma razón, el parpadeo anima solo opacidad.
+- Santa: trineo dorado con dos renos (el primero con nariz roja) que cruza el cielo cada 40 s, tarda unos 9 s y flota, con una estela tenue. Se oculta con `prefers-reduced-motion`.
+- Música: botón "Jingle Bell Rock" abajo a la derecha que abre el reproductor oficial de Spotify (sencillo de 1957) en una tarjeta de vidrio. Vive en el layout para no cortarse al navegar. Nunca suena sola: se le da play.
 - Todo se apaga con `prefers-reduced-motion`. Solo se animan `transform`, `opacity` y `filter`.
 
 ## 7. Anti-Patterns (Banned)

@@ -3,6 +3,7 @@
 import { createBrowserClient } from "@supabase/ssr";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { PAISES, type Direccion, type Pais } from "@/lib/util";
 import { gsap, sinMovimiento, useGSAP } from "./motion";
 import { Icono } from "./ui";
@@ -120,6 +121,46 @@ export function CamposDireccion({ d }: { d?: Direccion }) {
         <span className="etiqueta">{us ? "Street address (con Apt o Unit)" : "Calle, número e interior"}</span>
         <input name="calle" required maxLength={120} autoComplete="address-line1" defaultValue={d?.calle} placeholder={us ? "Ej. 1200 Main St, Apt 4B" : undefined} className="input" />
       </label>
+    </>
+  );
+}
+
+// "Jingle Bell Rock" (Bobby Helms, sencillo original de 1957) con el reproductor oficial de Spotify. No se aloja el audio (derechos de autor)
+// y YouTube no sirve: Universal Music bloquea reproducir su video fuera de YouTube.
+// Spotify incrustado: canción completa si la persona tiene sesión de Spotify en el navegador; si no, avance de 30 s.
+const JINGLE_BELL_ROCK = "7vQbuQcyTflfCIOu3Uzzya";
+
+/**
+ * Botón de música. El reproductor solo se carga tras el toque y vive en el layout, así que la canción sigue al navegar.
+ * Se le da play dentro del reproductor: los navegadores no dejan que una página empiece a sonar sola.
+ */
+export function Musica() {
+  const [abierta, setAbierta] = useState(false);
+  const enChat = usePathname().includes("/chat/");
+
+  return (
+    <>
+      {abierta && (
+        <div className={`vidrio fixed right-4 z-20 w-[min(320px,calc(100vw-2rem))] rounded-[28px] p-1.5 ${enChat ? "bottom-40" : "bottom-20"}`}>
+          <iframe
+            title="Jingle Bell Rock en Spotify"
+            src={`https://open.spotify.com/embed/track/${JINGLE_BELL_ROCK}?theme=0`}
+            height="152"
+            className="block w-full rounded-[22px]"
+            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+          />
+        </div>
+      )}
+      <button
+        type="button"
+        onClick={() => setAbierta((a) => !a)}
+        aria-pressed={abierta}
+        aria-label={abierta ? "Cerrar reproductor de Jingle Bell Rock" : "Abrir reproductor de Jingle Bell Rock"}
+        className={`vidrio fixed right-4 z-20 flex h-12 items-center gap-2 rounded-full pl-3.5 pr-4 text-sm ${enChat ? "bottom-24" : "bottom-5"}`}
+      >
+        <Icono n={abierta ? "x" : "musica"} className="size-[18px] text-[#f4c26b]" />
+        {abierta ? "Cerrar música" : "Jingle Bell Rock"}
+      </button>
     </>
   );
 }

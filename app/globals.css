@@ -151,11 +151,13 @@ body {
  * Nieve: dos capas de copos dibujados con gradientes que caen en loop.
  * Solo anima transform en capas fijas: cuesta casi nada.
  */
+/* Por delante del contenido (z 30): si cayera detrás, cada pieza de vidrio se recalcularía en cada cuadro. */
 .nieve {
   position: fixed;
   inset: 0;
   overflow: hidden;
   pointer-events: none;
+  z-index: 30;
 }
 .nieve::before, .nieve::after {
   content: "";
@@ -190,7 +192,8 @@ body {
 @keyframes nevar { to { transform: translateY(50%); } }
 
 /* Serie de luces: focos que parpadean a destiempo (--i escalona el retraso). */
-.serie { position: fixed; inset: 0 0 auto; height: 64px; display: flex; pointer-events: none; z-index: 0; }
+/* Cuelga por delante de la barra (z 30), como una serie real; tampoco obliga a recalcular el vidrio. */
+.serie { position: fixed; inset: 0 0 auto; height: 64px; display: flex; pointer-events: none; z-index: 30; }
 .serie > span { position: relative; flex: 1; }
 .serie svg { position: absolute; inset: 0; width: 100%; height: 34px; }
 .foco {
@@ -207,8 +210,48 @@ body {
   animation-delay: calc(var(--i) * -0.37s);
 }
 .foco::before { content: ""; position: absolute; top: -4px; left: 3px; width: 6px; height: 5px; border-radius: 1.5px; background: #4a4b50; }
-@keyframes titila { 50% { opacity: 0.35; box-shadow: 0 0 4px 0 color-mix(in srgb, var(--c) 30%, transparent); } }
+/* Solo opacidad: la resuelve la tarjeta gráfica sin redibujar. */
+@keyframes titila { 50% { opacity: 0.35; } }
+
+/*
+ * Santa cruza el cielo de derecha a izquierda una vez cada 40 s (tarda ~9 s), flotando.
+ * Dorado y con brillo para verse sobre la Noche; detrás del contenido, como la nieve.
+ */
+.santa {
+  position: fixed;
+  top: 16vh;
+  left: 0;
+  pointer-events: none;
+  color: #f4c26b;
+  filter: drop-shadow(0 0 6px rgba(244, 194, 107, 0.55));
+  transform: translateX(110vw);
+  animation: vuela 40s linear 3s infinite;
+}
+.santa-flota { position: relative; animation: flota 1.6s ease-in-out infinite alternate; }
+.santa-estela {
+  position: absolute;
+  left: 190px;
+  top: 34px;
+  width: 180px;
+  height: 10px;
+  background:
+    radial-gradient(1.5px 1.5px at 10% 40%, #fff1d6, transparent 70%),
+    radial-gradient(2px 2px at 28% 70%, #f4c26b, transparent 70%),
+    radial-gradient(1.5px 1.5px at 47% 30%, #fff1d6, transparent 70%),
+    radial-gradient(1px 1px at 66% 60%, #f4c26b, transparent 70%),
+    radial-gradient(1px 1px at 85% 45%, #fff1d6, transparent 70%),
+    linear-gradient(to right, rgba(244, 194, 107, 0.16), transparent 80%);
+  mask-image: linear-gradient(to right, black, transparent);
+  border-radius: 999px;
+}
+@keyframes vuela {
+  0% { transform: translateX(110vw) translateY(0); }
+  22% { transform: translateX(-420px) translateY(-6vh); }
+  100% { transform: translateX(-420px) translateY(-6vh); }
+}
+@keyframes flota { to { transform: translateY(-7px) rotate(-2deg); } }
 
 @media (prefers-reduced-motion: reduce) {
   .brillo, .brillo-pino, .foco, .nieve::before, .nieve::after { animation: none; }
+  .santa { display: none; }
 }

@@ -9,6 +9,7 @@ import {
   Gift,
   GoogleLogo,
   Link as LinkIcon,
+  MusicNotesSimple,
   PaperPlaneRight,
   Plus,
   TreeEvergreen,
@@ -29,6 +30,7 @@ const iconos = {
   copiar: Copy,
   check: Check,
   arbol: TreeEvergreen,
+  musica: MusicNotesSimple,
 };
 
 export function Icono({ n, className = "size-5" }: { n: keyof typeof iconos; className?: string }) {
@@ -67,6 +69,43 @@ export function Serie() {
           <i className="foco" style={{ "--c": COLORES_FOCO[i % 4], "--i": i } as React.CSSProperties} />
         </span>
       ))}
+    </div>
+  );
+}
+
+/** Un reno visto de lado, mirando a la izquierda (trazo dorado). */
+function Reno({ x, nariz }: { x: number; nariz?: boolean }) {
+  return (
+    <g transform={`translate(${x} 0)`}>
+      <ellipse cx="20" cy="17" rx="10" ry="4.6" />
+      <path d="M12 15 L7 9" />
+      <ellipse cx="5.5" cy="8" rx="3.3" ry="2.2" />
+      <path d="M5 6 L3 1.5 M4 3.6 L1 3 M7 6 L9 1.5 M8.3 3 L11 2.6" fill="none" />
+      <path d="M14 20 L9 25 M16.5 21 L15 27 M25 20 L29 24.5 M27 19 L32 22 M30 15 L33.5 12.5" fill="none" />
+      {nariz && <circle cx="2.2" cy="8.6" r="1.6" fill="#ff4530" stroke="none" />}
+    </g>
+  );
+}
+
+/** Santa en su trineo cruzando el cielo de vez en cuando (decorativo, ver .santa en globals.css). */
+export function Santa() {
+  return (
+    <div className="santa" aria-hidden>
+      <div className="santa-flota">
+        <svg viewBox="-2 -6 134 40" width="200" height="60" fill="currentColor" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+          <Reno x={0} nariz />
+          <Reno x={38} />
+          <path d="M32 13 Q60 21 90 17" fill="none" strokeWidth="0.9" />
+          <path d="M88 14 Q90 26 104 26 L120 26 Q126 26 126 18 L126 10 L116 10 L116 18 L94 18 Q92 14 88 14 Z" />
+          <path d="M84 30 L122 30 Q128 30 128 24" fill="none" />
+          <circle cx="110" cy="11" r="5" />
+          <circle cx="106" cy="4" r="2.7" />
+          <path d="M104 2.5 L109 -2.5 L111.5 1" />
+          <circle cx="109.3" cy="-3.2" r="1.3" fill="#fff1d6" stroke="none" />
+          <circle cx="121" cy="7.5" r="5.2" />
+        </svg>
+        <span className="santa-estela" />
+      </div>
     </div>
   );
 }
