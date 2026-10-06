@@ -193,6 +193,39 @@ export default async function Intercambio({ params, searchParams }: PageProps<"/
           )}
         </section>
 
+        {/* Todas las listas (RLS: cualquier miembro las ve). Sin marcar a tu persona: delataría el nombre que se difumina arriba. */}
+        {gente!.length > 1 && (
+          <section className="pt-4">
+            <h2 className="titulo text-2xl">Lo que pide cada quien</h2>
+            <p className="etiqueta mt-1 mb-4">Para inspirarte o para no repetir regalo.</p>
+            <div className="space-y-2">
+              {gente!
+                .filter((p) => p.usuario_id !== user.id)
+                .map((p) => {
+                  const suyos = deseos!.filter((d) => d.usuario_id === p.usuario_id);
+                  return (
+                    <details key={p.usuario_id} className="group bezel [&_summary::-webkit-details-marker]:hidden">
+                      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3">
+                        <span className="truncate text-[15px] font-medium">{p.nombre}</span>
+                        <span className="flex shrink-0 items-center gap-2 text-sm text-muted">
+                          {suyos.length ? `${suyos.length} ${suyos.length === 1 ? "cosa" : "cosas"}` : "Todavía nada"}
+                          <Icono n="mas" className="size-4 transition-transform duration-300 group-open:rotate-45" />
+                        </span>
+                      </summary>
+                      <div className="bezel-core space-y-4">
+                        {suyos.length ? (
+                          suyos.map((d) => <Item key={d.id} d={d} presupuesto={i.presupuesto} />)
+                        ) : (
+                          <p className="text-[15px] text-muted">Aún no agrega nada a su lista.</p>
+                        )}
+                      </div>
+                    </details>
+                  );
+                })}
+            </div>
+          </section>
+        )}
+
         <section className="pt-4">
           <h2 className="titulo mb-4 text-2xl">Participantes</h2>
           <ul data-fichas className="flex flex-wrap gap-2">
