@@ -3,6 +3,7 @@ import { ViewTransition } from "react";
 import { sesion } from "@/lib/supabase";
 import { fecha, pesos } from "@/lib/util";
 import { crearIntercambio, salir } from "./actions";
+import { Enviar } from "./cliente";
 import { Barra, Bezel, ErrorMsg, Icono } from "./ui";
 
 export default async function Inicio({ searchParams }: PageProps<"/">) {
@@ -17,7 +18,7 @@ export default async function Inicio({ searchParams }: PageProps<"/">) {
     <main>
       <Barra>
         <form action={salir}>
-          <button className="btn-ghost h-10 px-4 text-sm text-muted">Salir</button>
+          <Enviar className="btn-ghost h-10 px-4 text-sm text-muted">Salir</Enviar>
         </form>
       </Barra>
 
@@ -75,12 +76,12 @@ export default async function Inicio({ searchParams }: PageProps<"/">) {
                 <input name="presupuesto" type="number" min={0} step={50} inputMode="numeric" placeholder="600" className="input" />
               </label>
             </div>
-            <button className="btn w-full">
+            <Enviar cargando="Creando..." className="btn w-full">
               Crear intercambio
               <span className="btn-icono">
                 <Icono n="flecha" />
               </span>
-            </button>
+            </Enviar>
           </form>
         </Bezel>
       </details>

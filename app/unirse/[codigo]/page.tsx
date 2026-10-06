@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { sesion } from "@/lib/supabase";
 import { unirse } from "../../actions";
+import { Enviar } from "../../cliente";
 import { Barra, Bezel, ErrorMsg, Icono } from "../../ui";
 
 export default async function Unirse({ params, searchParams }: PageProps<"/unirse/[codigo]">) {
@@ -27,12 +28,12 @@ export default async function Unirse({ params, searchParams }: PageProps<"/unirs
             <span className="etiqueta">Tu nombre o apodo</span>
             <input name="nombre" required maxLength={40} defaultValue={nombre} className="input" />
           </label>
-          <button className="btn w-full">
+          <Enviar cargando="Apuntándote..." className="btn w-full">
             Me apunto
             <span className="btn-icono">
               <Icono n="flecha" />
             </span>
-          </button>
+          </Enviar>
         </form>
       </Bezel>
     </main>

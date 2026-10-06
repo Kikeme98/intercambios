@@ -1,4 +1,5 @@
 import { entrarCorreo, entrarGoogle } from "../actions";
+import { Enviar } from "../cliente";
 import { TituloLetras } from "../motion";
 import { ErrorMsg, Icono } from "../ui";
 
@@ -27,20 +28,20 @@ export default async function Entrar({ searchParams }: PageProps<"/entrar">) {
           <>
             <form action={entrarGoogle}>
               <input type="hidden" name="next" value={next} />
-              <button className="btn w-full">
+              <Enviar cargando="Abriendo Google..." className="btn w-full">
                 Entrar con Google
                 <span className="btn-icono">
                   <Icono n="google" />
                 </span>
-              </button>
+              </Enviar>
             </form>
             <form action={entrarCorreo} className="campo">
               <input type="hidden" name="next" value={next} />
               <label htmlFor="email" className="sr-only">Correo</label>
               <input id="email" type="email" name="email" required autoComplete="email" placeholder="O entra con tu correo" />
-              <button className="accion" aria-label="Mandarme el link para entrar">
+              <Enviar className="accion" aria-label="Mandarme el link para entrar">
                 <Icono n="flecha" />
-              </button>
+              </Enviar>
             </form>
           </>
         )}

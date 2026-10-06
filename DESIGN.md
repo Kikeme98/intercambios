@@ -39,6 +39,7 @@ Nada de morado, neón ni negro puro. El error también usa Brasa: un solo acento
 - **Campos agrupados:** un input y su botón viven en una sola píldora de Vidrio, con el botón acoplado adentro a la derecha (círculo Brasa de 44px). Si son dos inputs para una acción, van en un grupo de 28px separados por un filo de 1px.
 - **Inputs sueltos:** píldora con fondo Vidrio, borde Filo y foco Tiza. Etiqueta arriba, error abajo.
 - **Burbujas de chat:** las tuyas son Tiza sobre Noche y las otras son Núcleo con borde Filo. Radio 20px.
+- **Cargando:** todo botón de formulario usa `Enviar` (useFormStatus): se desactiva, le corre el destello en loop y cambia a texto de progreso ("Guardando...") con puntitos en el círculo, o solo puntitos si es un botón de ícono. Al agregar un deseo aparece un renglón fantasma con brillo (`.esqueleto`) donde va a quedar. Lo que se está borrando se atenúa. Nunca spinners.
 - **Estados vacíos:** una frase que dice qué hacer, dentro de un marco punteado.
 
 ## 5. Layout Principles

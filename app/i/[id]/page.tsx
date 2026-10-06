@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { sesion } from "@/lib/supabase";
 import { diasPara, fecha, formatoDireccion, pesos, type Direccion } from "@/lib/util";
 import { agregarDeseo, agregarExclusion, borrarDeseo, borrarExclusion, borrarIntercambio, deshacerSorteo, editarIntercambio, guardarDireccion, quitarParticipante, sortear } from "../../actions";
-import { CamposDireccion, Copiar, CopiarTexto, Revelar } from "../../cliente";
+import { CamposDireccion, Copiar, CopiarTexto, DeseoEnCamino, Enviar, Revelar } from "../../cliente";
 import { BotonSortear } from "../../motion";
 import { Barra, Bezel, ErrorMsg, Icono } from "../../ui";
 
@@ -74,12 +74,12 @@ export default async function Intercambio({ params, searchParams }: PageProps<"/
                     <input name="presupuesto" type="number" min={0} step={50} inputMode="numeric" defaultValue={i.presupuesto ?? ""} className="input" />
                   </label>
                 </div>
-                <button className="btn w-full">
+                <Enviar cargando="Guardando..." className="btn w-full">
                   Guardar cambios
                   <span className="btn-icono">
                     <Icono n="check" />
                   </span>
-                </button>
+                </Enviar>
               </form>
             </Bezel>
           </details>
@@ -158,19 +158,23 @@ export default async function Intercambio({ params, searchParams }: PageProps<"/
               <Item key={d.id} d={d} presupuesto={i.presupuesto} borrar={id} />
             ))}
           </div>
-          <form action={agregarDeseo} className="grupo mt-4">
+          <form action={agregarDeseo} className="mt-4 space-y-4">
             <input type="hidden" name="id" value={id} />
-            <div className="flex h-12 items-center px-4">
-              <label htmlFor="texto" className="sr-only">Deseo</label>
-              <input id="texto" name="texto" maxLength={200} placeholder="¿Qué se te antoja?" />
-            </div>
-            <div className="mx-4 h-px bg-line" />
-            <div className="flex h-14 items-center gap-2 pl-4">
-              <label htmlFor="url" className="sr-only">Link</label>
-              <input id="url" name="url" type="url" inputMode="url" placeholder="Link de la tienda (opcional)" />
-              <button className="accion" aria-label="Agregar deseo">
-                <Icono n="mas" />
-              </button>
+            {/* Mientras se guarda y se lee el link de la tienda, un renglón fantasma ocupa el lugar del deseo. */}
+            <DeseoEnCamino />
+            <div className="grupo">
+              <div className="flex h-12 items-center px-4">
+                <label htmlFor="texto" className="sr-only">Deseo</label>
+                <input id="texto" name="texto" maxLength={200} placeholder="¿Qué se te antoja?" />
+              </div>
+              <div className="mx-4 h-px bg-line" />
+              <div className="flex h-14 items-center gap-2 pl-4">
+                <label htmlFor="url" className="sr-only">Link</label>
+                <input id="url" name="url" type="url" inputMode="url" placeholder="Link de la tienda (opcional)" />
+                <Enviar className="accion" aria-label="Agregar deseo">
+                  <Icono n="mas" />
+                </Enviar>
+              </div>
             </div>
           </form>
         </section>
@@ -237,9 +241,9 @@ export default async function Intercambio({ params, searchParams }: PageProps<"/
                   <form action={quitarParticipante}>
                     <input type="hidden" name="id" value={id} />
                     <input type="hidden" name="usuario" value={p.usuario_id} />
-                    <button className="grid size-7 place-items-center rounded-full text-muted hover:bg-white/10 hover:text-ink" aria-label={`Quitar a ${p.nombre}`}>
+                    <Enviar className="grid size-7 place-items-center rounded-full text-muted hover:bg-white/10 hover:text-ink" aria-label={`Quitar a ${p.nombre}`}>
                       <Icono n="x" className="size-3.5" />
-                    </button>
+                    </Enviar>
                   </form>
                 ) : (
                   p.usuario_id !== i.organizador_id && <span className="w-2.5" />
@@ -263,9 +267,9 @@ export default async function Intercambio({ params, searchParams }: PageProps<"/
                         <input type="hidden" name="id" value={id} />
                         <input type="hidden" name="a" value={e.usuario_a} />
                         <input type="hidden" name="b" value={e.usuario_b} />
-                        <button className="grid size-8 place-items-center rounded-full text-muted hover:bg-white/10 hover:text-ink" aria-label="Quitar exclusión">
+                        <Enviar className="grid size-8 place-items-center rounded-full text-muted hover:bg-white/10 hover:text-ink" aria-label="Quitar exclusión">
                           <Icono n="x" className="size-4" />
-                        </button>
+                        </Enviar>
                       </form>
                     </li>
                   ))}
@@ -285,9 +289,9 @@ export default async function Intercambio({ params, searchParams }: PageProps<"/
                       <option key={p.usuario_id} value={p.usuario_id}>{p.nombre}</option>
                     ))}
                   </select>
-                  <button className="accion" aria-label="Agregar exclusión">
+                  <Enviar className="accion" aria-label="Agregar exclusión">
                     <Icono n="mas" />
-                  </button>
+                  </Enviar>
                 </form>
               </div>
               <form action={sortear} className="border-t border-line pt-5">
@@ -337,12 +341,12 @@ function Confirmar({ accion, id, boton, aviso, confirmo }: { accion: (f: FormDat
             <input type="checkbox" name="confirmo" value="si" required className="mt-0.5 size-5 shrink-0 accent-[var(--accent)]" />
             {confirmo}
           </label>
-          <button className="btn w-full">
+          <Enviar cargando="Un momento..." className="btn w-full">
             {boton}
             <span className="btn-icono">
               <Icono n="x" />
             </span>
-          </button>
+          </Enviar>
         </form>
       </Bezel>
     </details>
@@ -378,9 +382,9 @@ function Item({ d, presupuesto, borrar }: { d: Deseo; presupuesto: number | null
         <form action={borrarDeseo}>
           <input type="hidden" name="id" value={borrar} />
           <input type="hidden" name="deseo" value={d.id} />
-          <button className="grid size-9 place-items-center rounded-full text-muted hover:bg-white/10 hover:text-ink" aria-label="Quitar deseo">
+          <Enviar className="grid size-9 place-items-center rounded-full text-muted hover:bg-white/10 hover:text-ink" aria-label="Quitar deseo">
             <Icono n="x" className="size-4" />
-          </button>
+          </Enviar>
         </form>
       )}
     </div>
@@ -395,12 +399,12 @@ function FormDireccion({ id, d }: { id: string; d?: Direccion }) {
       <Campo nombre="recibe" etiqueta="Quién recibe" auto="name" valor={d?.recibe} />
       <Campo nombre="telefono" etiqueta="Teléfono (10 dígitos)" auto="tel-national" valor={d?.telefono} tipo="tel" modo="tel" />
       <Campo nombre="referencias" etiqueta="Referencias (opcional)" valor={d?.referencias ?? undefined} requerido={false} max={200} ayuda="Entre calles, color de la casa..." />
-      <button className="btn mt-2 w-full">
+      <Enviar cargando="Guardando..." className="btn mt-2 w-full">
         Guardar dirección
         <span className="btn-icono">
           <Icono n="check" />
         </span>
-      </button>
+      </Enviar>
     </form>
   );
 }

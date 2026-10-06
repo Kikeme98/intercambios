@@ -4,6 +4,7 @@ import { createBrowserClient } from "@supabase/ssr";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
+import { useFormStatus } from "react-dom";
 import { PAISES, type Direccion, type Pais } from "@/lib/util";
 import { destellar, gsap, sinMovimiento, useGSAP } from "./motion";
 import { Icono } from "./ui";
@@ -162,6 +163,57 @@ export function Musica() {
         {abierta ? "Cerrar música" : "Jingle Bell Rock"}
       </button>
     </>
+  );
+}
+
+/** Tres puntitos que rebotan: "trabajando" para botones con ícono (no hay espacio para texto). */
+export function Puntos() {
+  return (
+    <span className="puntos" role="status" aria-label="Cargando">
+      <i style={{ "--i": 0 } as React.CSSProperties} />
+      <i style={{ "--i": 1 } as React.CSSProperties} />
+      <i style={{ "--i": 2 } as React.CSSProperties} />
+    </span>
+  );
+}
+
+/**
+ * Botón de envío que muestra que está trabajando mientras la acción del servidor corre:
+ * se desactiva (sin dobles envíos), le pasa un destello continuo y, si trae `cargando`,
+ * cambia su texto y el círculo del ícono pasa a puntitos; si no, el ícono pasa a puntitos.
+ */
+export function Enviar({ cargando, children, className = "", disabled, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement> & { cargando?: string }) {
+  const { pending } = useFormStatus();
+  return (
+    <button {...props} className={`${className} ${pending ? "enviando" : ""}`} disabled={pending || disabled} aria-busy={pending}>
+      {!pending ? (
+        children
+      ) : cargando ? (
+        <>
+          {cargando}
+          <span className="btn-icono">
+            <Puntos />
+          </span>
+        </>
+      ) : (
+        <Puntos />
+      )}
+    </button>
+  );
+}
+
+/** Renglón fantasma donde va a aparecer el deseo mientras se guarda y se lee el link de la tienda. */
+export function DeseoEnCamino() {
+  const { pending } = useFormStatus();
+  if (!pending) return null;
+  return (
+    <div className="flex items-center gap-3" role="status" aria-label="Guardando tu deseo">
+      <div className="esqueleto size-12 shrink-0 rounded-full" />
+      <div className="flex-1 space-y-2">
+        <div className="esqueleto h-3.5 w-3/5 rounded-full" />
+        <div className="esqueleto h-2.5 w-2/5 rounded-full" />
+      </div>
+    </div>
   );
 }
 
@@ -418,9 +470,9 @@ export function Chat({ intercambio, receptor, soySanta, inicial }: { intercambio
           <label htmlFor="texto" className="sr-only">Mensaje</label>
           <div className="campo flex-1">
             <input id="texto" name="texto" placeholder="Escribe un mensaje" autoComplete="off" maxLength={1000} />
-            <button className="accion" aria-label="Enviar">
+            <Enviar className="accion" aria-label="Enviar">
               <Icono n="enviar" className="size-5" />
-            </button>
+            </Enviar>
           </div>
         </div>
       </form>
