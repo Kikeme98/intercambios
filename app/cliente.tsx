@@ -5,7 +5,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { PAISES, type Direccion, type Pais } from "@/lib/util";
-import { gsap, sinMovimiento, useGSAP } from "./motion";
+import { destellar, gsap, sinMovimiento, useGSAP } from "./motion";
 import { Icono } from "./ui";
 
 // Un solo cliente de Supabase en el navegador.
@@ -141,7 +141,7 @@ export function Musica() {
   return (
     <>
       {abierta && (
-        <div className={`vidrio fixed right-4 z-20 w-[min(320px,calc(100vw-2rem))] rounded-[28px] p-1.5 ${enChat ? "bottom-40" : "bottom-20"}`}>
+        <div className={`reproductor vidrio fixed right-4 z-20 w-[min(320px,calc(100vw-2rem))] rounded-[28px] p-1.5 ${enChat ? "bottom-40" : "bottom-20"}`}>
           <iframe
             title="Jingle Bell Rock en Spotify"
             src={`https://open.spotify.com/embed/track/${JINGLE_BELL_ROCK}?theme=0`}
@@ -264,6 +264,7 @@ export function Revelar({ nombre }: { nombre: string }) {
       scrambleText: { text: nombre, chars: nombre.replace(/\s/g, ""), speed: 0.5, revealDelay: 0.2 },
       onComplete: () => gsap.set(n, { clearProps: "height" }),
     });
+    destellar(raiz.current!.closest(".bezel"));
     if (primera.current) {
       primera.current = false;
       chispas(n);
@@ -384,6 +385,7 @@ export function Chat({ intercambio, receptor, soySanta, inicial }: { intercambio
     if (error) setError("No se envió. Revisa tu conexión e intenta otra vez.");
     else {
       setError("");
+      destellar(document.querySelector("form .campo"));
       agregar(data);
     }
   }

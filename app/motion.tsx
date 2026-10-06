@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { useFormStatus } from "react-dom";
 import { gsap } from "gsap";
 import { useGSAP } from "@gsap/react";
@@ -15,28 +16,115 @@ gsap.defaults({ ease: "expo.out" });
 export { gsap, useGSAP };
 export const sinMovimiento = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+/** Superficies que se comportan como cristal: destello al tocar y brillo especular que sigue al puntero. */
+const SUPERFICIES = ".bezel, .btn, .btn-ghost, .redondo, .campo, .grupo";
+
+/** Hace pasar un destello de luz por la superficie (al tocar o en momentos clave). */
+export function destellar(el: Element | null | undefined) {
+  if (!el || sinMovimiento()) return;
+  el.classList.remove("destello");
+  void (el as HTMLElement).offsetWidth; // reinicia la animación aunque siga en curso
+  el.classList.add("destello");
+}
+
 /**
  * Capa global montada una vez en el layout:
- * brillo que sigue al cursor, ícono magnético en CTAs, inclinación 3D de tarjetas con luz
- * Todo solo en pointer fino y sin reduced-motion.
+ * - Cristal: destello al tocar, brillo especular que sigue al cursor (o al dedo mientras presionas).
+ * - Desplegables (<details>) que crecen y se encogen con su contenido, en todos los navegadores.
+ * - Solo con puntero fino: brillo de fondo con inercia, ícono magnético en CTAs e inclinación 3D de tarjetas.
+ * - html.montado: lo que se agrega después de cargar la pantalla crece al aparecer (ver .crece).
+ * Todo se apaga con reduced-motion.
  */
 export function Efectos() {
-  useEffect(() => {
+  const ruta = usePathname();
+  // Al cambiar de pantalla, lo nuevo aparece de una (no crece); a partir del siguiente cuadro, lo que se agregue sí.
+  useLayoutEffect(() => {
+    const raiz = document.documentElement;
+    raiz.classList.remove("montado");
+    const id = requestAnimationFrame(() => raiz.classList.add("montado"));
+    return () => cancelAnimationFrame(id);
+  }, [ruta]);
 
+  useEffect(() => {
     const mm = gsap.matchMedia();
     mm.add(
       { movimiento: "(prefers-reduced-motion: no-preference)", fino: "(hover: hover) and (pointer: fine)" },
       (ctx) => {
         const { movimiento, fino } = ctx.conditions as { movimiento: boolean; fino: boolean };
+        if (!movimiento) return;
 
-        if (!movimiento || !fino) return;
+        // --- Cristal: brillo especular ---
+        let iluminada: HTMLElement | null = null;
+        let presionando = false;
+        const apagar = () => {
+          iluminada?.style.setProperty("--luz", "0");
+          iluminada = null;
+        };
+        const iluminar = (e: PointerEvent) => {
+          const el = (e.target as Element).closest?.<HTMLElement>(SUPERFICIES) ?? null;
+          if (el !== iluminada) apagar();
+          if (!el) return;
+          const r = el.getBoundingClientRect();
+          el.style.setProperty("--mx", `${e.clientX - r.left}px`);
+          el.style.setProperty("--my", `${e.clientY - r.top}px`);
+          el.style.setProperty("--luz", "1");
+          iluminada = el;
+        };
 
-        // Brillo con mucha inercia
+        // --- Desplegables que crecen ---
+        const alternar = (e: MouseEvent) => {
+          const resumen = (e.target as Element).closest?.("summary");
+          const d = resumen?.parentElement;
+          if (!(d instanceof HTMLDetailsElement) || resumen !== d.querySelector(":scope > summary")) return;
+          e.preventDefault();
+          if (gsap.isTweening(d)) return;
+          const desde = d.offsetHeight;
+          const contenido = [...d.children].filter((c) => c !== resumen);
+          if (!d.open) {
+            d.open = true;
+            const hasta = d.offsetHeight;
+            gsap.fromTo(d, { height: desde, overflow: "hidden" }, { height: hasta, duration: 0.6, ease: "expo.out", clearProps: "height,overflow" });
+            gsap.fromTo(contenido, { opacity: 0, y: -10, scale: 0.97, transformOrigin: "50% 0%" }, { opacity: 1, y: 0, scale: 1, duration: 0.55, ease: "expo.out", clearProps: "all" });
+          } else {
+            d.open = false;
+            const hasta = d.offsetHeight; // altura cerrado
+            d.open = true;
+            gsap.to(contenido, { opacity: 0, duration: 0.2 });
+            gsap.fromTo(
+              d,
+              { height: desde, overflow: "hidden" },
+              {
+                height: hasta,
+                duration: 0.45,
+                ease: "expo.inOut",
+                onComplete: () => {
+                  d.open = false;
+                  gsap.set(d, { clearProps: "height,overflow" });
+                  gsap.set(contenido, { clearProps: "opacity" });
+                },
+              },
+            );
+          }
+        };
+
+        const presionar = (e: PointerEvent) => {
+          presionando = true;
+          const t = e.target as Element;
+          destellar(t.closest?.(SUPERFICIES));
+          iluminar(e);
+          const btn = t.closest?.(".btn:not(:disabled)");
+          if (btn) gsap.to(btn, { scale: 0.98, duration: 0.2, ease: "power2.out" });
+        };
+        const levantar = () => {
+          presionando = false;
+          if (!fino) apagar();
+          gsap.to(".btn", { scale: 1, duration: 0.6, ease: "elastic.out(1, 0.5)" });
+        };
+
+        // --- Solo puntero fino: fondo, imán e inclinación ---
         const brillo = document.querySelector(".brillo-sigue");
-        const bx = gsap.quickTo(brillo, "x", { duration: 3, ease: "power3.out" });
-        const by = gsap.quickTo(brillo, "y", { duration: 3, ease: "power3.out" });
-
-        // quickTo por elemento, cacheados
+        const bx = fino ? gsap.quickTo(brillo, "x", { duration: 3, ease: "power3.out" }) : null;
+        const by = fino ? gsap.quickTo(brillo, "y", { duration: 3, ease: "power3.out" }) : null;
         const qts = new WeakMap<Element, Record<string, (v: number) => void>>();
         const q = (el: Element, props: string[], duration = 0.6) => {
           let r = qts.get(el);
@@ -46,7 +134,6 @@ export function Efectos() {
           }
           return r;
         };
-
         let iman: HTMLElement | null = null;
         let tilt: HTMLElement | null = null;
         const soltarIman = () => {
@@ -58,13 +145,14 @@ export function Efectos() {
         const soltarTilt = () => {
           if (!tilt) return;
           gsap.to(tilt, { rotationX: 0, rotationY: 0, duration: 0.8, ease: "power3.out" });
-          tilt.style.setProperty("--luz", "0");
           tilt = null;
         };
 
         const mover = (e: PointerEvent) => {
-          bx((e.clientX - innerWidth / 2) * 0.3);
-          by((e.clientY - innerHeight / 2) * 0.3);
+          if (fino || presionando) iluminar(e);
+          if (!fino) return;
+          bx!((e.clientX - innerWidth / 2) * 0.3);
+          by!((e.clientY - innerHeight / 2) * 0.3);
           const t = e.target as Element;
 
           const btn = t.closest?.<HTMLElement>(".btn:not(:disabled)") ?? null;
@@ -92,18 +180,10 @@ export function Efectos() {
             gsap.set(card, { transformPerspective: 900 });
             m.rotationX((0.5 - py) * 3);
             m.rotationY((px - 0.5) * 4);
-            card.style.setProperty("--mx", `${px * 100}%`);
-            card.style.setProperty("--my", `${py * 100}%`);
-            card.style.setProperty("--luz", "1");
           }
         };
-        const presionar = (e: PointerEvent) => {
-          const t = e.target as Element;
-          const btn = t.closest?.(".btn:not(:disabled)");
-          if (btn) gsap.to(btn, { scale: 0.98, duration: 0.2, ease: "power2.out" });
-        };
-        const levantar = () => gsap.to(".btn", { scale: 1, duration: 0.6, ease: "elastic.out(1, 0.5)" });
         const salir = () => {
+          apagar();
           soltarIman();
           soltarTilt();
         };
@@ -111,11 +191,15 @@ export function Efectos() {
         addEventListener("pointermove", mover, { passive: true });
         addEventListener("pointerdown", presionar);
         addEventListener("pointerup", levantar);
+        addEventListener("pointercancel", levantar);
+        document.addEventListener("click", alternar);
         document.documentElement.addEventListener("pointerleave", salir);
         return () => {
           removeEventListener("pointermove", mover);
           removeEventListener("pointerdown", presionar);
           removeEventListener("pointerup", levantar);
+          removeEventListener("pointercancel", levantar);
+          document.removeEventListener("click", alternar);
           document.documentElement.removeEventListener("pointerleave", salir);
         };
       },
@@ -160,6 +244,8 @@ export function BotonSortear({ deshabilitado }: { deshabilitado: boolean }) {
     if (!form || revolviendo || pending) return;
     if (!lista || sinMovimiento()) return form.requestSubmit();
     setRevolviendo(true);
+    // Mover fichas cuenta como "recién agregadas" y las haría crecer en cada barajada: se apaga mientras tanto.
+    document.documentElement.classList.remove("montado");
     const original = [...lista.children] as HTMLElement[];
     // Con absolute: true las fichas salen del flujo; fijar la altura evita que lo de abajo brinque.
     lista.style.minHeight = `${lista.offsetHeight}px`;
@@ -168,6 +254,7 @@ export function BotonSortear({ deshabilitado }: { deshabilitado: boolean }) {
     const tl = gsap.timeline({
       delay: 0.5,
       onComplete: () => {
+        document.documentElement.classList.add("montado");
         lista.style.minHeight = "";
         setRevolviendo(false);
         form.requestSubmit();

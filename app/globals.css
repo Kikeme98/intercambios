@@ -53,18 +53,6 @@ body {
   /* Doble marco: bandeja con filos de luz + núcleo concéntrico */
   .bezel { @apply vidrio relative rounded-[32px] p-1.5; }
   .bezel-core { @apply rounded-[26px] bg-core p-5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.07)]; }
-  /* Luz que sigue al cursor en tarjetas inclinables */
-  [data-tilt] .bezel::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    pointer-events: none;
-    background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 50%), rgba(255, 255, 255, 0.09), transparent 60%);
-    opacity: var(--luz, 0);
-    transition: opacity 500ms var(--ease);
-  }
-
   .btn {
     @apply inline-flex h-[58px] items-center justify-between gap-3 rounded-full bg-ink pl-6 pr-[7px] font-medium text-bg disabled:opacity-40;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 -2px 6px rgba(0, 0, 0, 0.12), 0 14px 30px -14px rgba(255, 69, 48, 0.35);
@@ -233,7 +221,57 @@ body {
 }
 @keyframes flota { to { transform: translateY(-7px) rotate(-2deg); } }
 
+/*
+ * Cristal sin costo (nada de backdrop-filter): sobre cada superficie viajan dos luces.
+ * ::after brillo especular que sigue al puntero (--mx, --my, --luz los pone Efectos en motion.tsx).
+ * ::before destello que barre la superficie al tocarla (.destello). Se mueve con background-position
+ * para respetar las esquinas sin recortar la tarjeta (las chispas de "revelar" salen de ella).
+ */
+:where(.bezel, .btn, .btn-ghost, .redondo, .campo, .grupo) { position: relative; }
+:where(.bezel, .btn, .btn-ghost, .redondo, .campo, .grupo)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(180px circle at var(--mx, 50%) var(--my, 50%), rgba(255, 255, 255, 0.1), transparent 65%);
+  opacity: var(--luz, 0);
+  transition: opacity 450ms var(--ease);
+}
+:where(.bezel, .btn, .btn-ghost, .redondo, .campo, .grupo)::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 42%, rgba(255, 255, 255, 0.16) 50%, transparent 58%) no-repeat 100% 0 / 250% 100%;
+  opacity: 0;
+}
+.btn::before { background-image: linear-gradient(105deg, transparent 42%, rgba(255, 255, 255, 0.95) 50%, transparent 58%); }
+.btn::after { background-image: radial-gradient(160px circle at var(--mx, 50%) var(--my, 50%), rgba(255, 255, 255, 0.7), transparent 65%); }
+.destello::before { animation: destello 850ms var(--ease); }
+@keyframes destello {
+  from { background-position: 100% 0; opacity: 1; }
+  to { background-position: 0% 0; opacity: 1; }
+}
+
+/*
+ * Crecer: lo que se agrega después de cargar la pantalla (html.montado) aparece creciendo en su lugar.
+ * Al navegar no hay animación: Efectos quita .montado durante el primer cuadro de cada pantalla.
+ */
+.montado .crece { transition: opacity 450ms var(--ease), scale 600ms var(--ease), translate 600ms var(--ease); }
+@starting-style {
+  .montado .crece { opacity: 0; scale: 0.92; translate: 0 10px; }
+}
+/* El reproductor de música crece desde su botón. */
+.reproductor { transform-origin: 100% 100%; transition: opacity 300ms var(--ease), scale 650ms var(--ease), translate 650ms var(--ease); }
+@starting-style {
+  .reproductor { opacity: 0; scale: 0.3; translate: 0 24px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .brillo, .brillo-pino, .foco, .nieve::before, .nieve::after { animation: none; }
   .santa { display: none; }
+  .destello::before { animation: none; }
+  .montado .crece, .reproductor { transition: none; }
 }

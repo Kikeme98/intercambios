@@ -230,7 +230,7 @@ export default async function Intercambio({ params, searchParams }: PageProps<"/
           <h2 className="titulo mb-4 text-2xl">Participantes</h2>
           <ul data-fichas className="flex flex-wrap gap-2">
             {gente!.map((p) => (
-              <li key={p.usuario_id} className="vidrio flex h-10 items-center gap-1 rounded-full pl-4 pr-1.5 text-[15px]">
+              <li key={p.usuario_id} className="crece vidrio flex h-10 items-center gap-1 rounded-full pl-4 pr-1.5 text-[15px]">
                 {p.nombre}
                 {p.usuario_id === i.organizador_id && <span className="dato ml-1 mr-2.5">organiza</span>}
                 {abierto && (soyOrg || p.usuario_id === user.id) && p.usuario_id !== i.organizador_id ? (
@@ -257,7 +257,7 @@ export default async function Intercambio({ params, searchParams }: PageProps<"/
                 <p className="etiqueta mt-1">Quiénes no se pueden tocar entre sí, como parejas o hermanos.</p>
                 <ul className="mt-4 space-y-2">
                   {exclusiones!.map((e) => (
-                    <li key={e.usuario_a + e.usuario_b} className="flex items-center justify-between rounded-full bg-white/5 py-1.5 pl-5 pr-1.5 text-sm">
+                    <li key={e.usuario_a + e.usuario_b} className="crece flex items-center justify-between rounded-full bg-white/5 py-1.5 pl-5 pr-1.5 text-sm">
                       {nombre(e.usuario_a)} y {nombre(e.usuario_b)}
                       <form action={borrarExclusion}>
                         <input type="hidden" name="id" value={id} />
@@ -352,7 +352,7 @@ function Confirmar({ accion, id, boton, aviso, confirmo }: { accion: (f: FormDat
 function Item({ d, presupuesto, borrar }: { d: Deseo; presupuesto: number | null; borrar?: string }) {
   const caro = presupuesto && d.precio && d.precio > presupuesto;
   return (
-    <div className="flex items-center gap-3">
+    <div className="crece flex items-center gap-3">
       {d.imagen ? (
         // eslint-disable-next-line @next/next/no-img-element -- imágenes de cualquier tienda
         <img src={d.imagen} alt="" className="size-12 shrink-0 rounded-full bg-white object-contain p-1" />
