@@ -3,6 +3,8 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
+import { avisarMensaje, avisarSorteo } from "@/lib/correo";
 import { db, sesion } from "@/lib/supabase";
 import { leerMeta, PAISES, rutaSegura, telefono10, urlPublica, type Pais } from "@/lib/util";
 
@@ -102,7 +104,24 @@ export async function sortear(f: FormData) {
   const { supabase } = await sesion();
   const { error } = await supabase.rpc("sortear", { i: id });
   if (error) fallar(`/i/${id}`, error.message);
+  const base = await origen();
+  after(() => avisarSorteo(id, base)); // los correos salen después de responder: el sorteo no se hace más lento
   revalidatePath(`/i/${id}`);
+}
+
+/**
+ * El chat inserta el mensaje desde el navegador; esto solo programa el aviso por correo.
+ * Se verifica que quien llama sea parte de ese hilo (para que nadie dispare correos a otros).
+ */
+export async function avisarMensajeNuevo(intercambioId: string, receptorId: string, deSanta: boolean) {
+  const { supabase, user } = await sesion();
+  if (deSanta) {
+    // RLS: solo regresa la asignación si quien llama es la santa de ese receptor.
+    const { data } = await supabase.from("asignacion").select("receptor_id").match({ intercambio_id: intercambioId, receptor_id: receptorId }).maybeSingle();
+    if (!data) return;
+  } else if (receptorId !== user.id) return;
+  const base = await origen();
+  after(() => avisarMensaje(intercambioId, receptorId, deSanta, base));
 }
 
 export async function quitarParticipante(f: FormData) {

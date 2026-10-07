@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useFormStatus } from "react-dom";
 import { PAISES, type Direccion, type Pais } from "@/lib/util";
+import { avisarMensajeNuevo } from "./actions";
 import { destellar, gsap, sinMovimiento, useGSAP } from "./motion";
 import { Icono } from "./ui";
 
@@ -438,6 +439,7 @@ export function Chat({ intercambio, receptor, soySanta, inicial }: { intercambio
     else {
       setError("");
       destellar(document.querySelector("form .campo"));
+      avisarMensajeNuevo(intercambio, receptor, soySanta); // correo a la otra parte (con pausa anti-spam)
       agregar(data);
     }
   }
